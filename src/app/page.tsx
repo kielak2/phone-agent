@@ -41,6 +41,7 @@ export default function LandingPage() {
     alert("Thank you for your message! We'll get back to you soon.")
   }
 
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
