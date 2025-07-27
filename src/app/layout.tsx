@@ -4,6 +4,7 @@ import { ConvexClientProvider } from "./ConvexClientProvider";
 import {
   ClerkProvider,
 } from '@clerk/nextjs'
+import { plPL } from "@clerk/localizations";
 
 import "./globals.css";
 
@@ -32,7 +33,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ClerkProvider>
+        <ClerkProvider localization={plPL}>
           <ConvexClientProvider>
           {children}  
           </ConvexClientProvider>

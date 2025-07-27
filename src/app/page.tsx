@@ -3,12 +3,12 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Phone, Mail, LogIn, MessageSquare, ShoppingCart, Zap, CheckCircle } from "lucide-react"
+import { Phone, ArrowRight, Mail, Globe, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { UserButton, SignInButton, useUser } from "@clerk/nextjs"
 import {
   Dialog,
   DialogContent,
@@ -19,240 +19,241 @@ import {
 } from "@/components/ui/dialog"
 
 export default function LandingPage() {
-  const [isContactOpen, setIsContactOpen] = useState(false)
+  const { isSignedIn, user } = useUser()
   const [email, setEmail] = useState("")
-  const [message, setMessage] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [website, setWebsite] = useState("")
+  const [isSubmitted, setIsSubmitted] = useState(false)
 
-  const handleContactSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitting(true)
+    // Here you would typically send the data to your backend
+    console.log("Form submitted:", { email, website })
+    setIsSubmitted(true)
 
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    console.log("Contact form submitted:", { email, message })
-    setIsSubmitting(false)
-    setIsContactOpen(false)
-    setEmail("")
-    setMessage("")
-
-    // In a real app, you'd send this to your backend
-    alert("Thank you for your message! We'll get back to you soon.")
+    // Reset form after 3 seconds
+    setTimeout(() => {
+      setIsSubmitted(false)
+      setEmail("")
+      setWebsite("")
+    }, 3000)
   }
 
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
-      <header className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Phone className="h-8 w-8 text-blue-600" />
-            <span className="text-xl font-bold text-gray-900">AI Phone Orders</span>
+      <header className="bg-white/80 backdrop-blur-sm border-b shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
+                <Phone className="h-6 w-6 text-white" />
+              </div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                AI Phone Orders
+              </h1>
+            </div>
+            {isSignedIn ? (
+              <UserButton 
+                appearance={{
+                  elements: {
+                    avatarBox: "w-8 h-8",
+                    userButtonPopoverCard: "shadow-lg border-0",
+                    userButtonPopoverActionButton: "hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
+                  }
+                }}
+              />
+            ) : (
+              <SignInButton mode="modal">
+                <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white">
+                  Zaloguj się
+                </Button>
+              </SignInButton>
+            )}
           </div>
-
-          <Button variant="outline" className="gap-2">
-            <LogIn className="h-4 w-4" />
-            Customer Login
-          </Button>
         </div>
       </header>
 
-      {/* Hero Section - Two Column Layout */}
-      <main className="container mx-auto px-4">
-        <div className="py-16 md:py-24">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            {/* Left Column - Text and CTAs */}
-            <div className="flex flex-col">
-              <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-                Turn Phone Calls Into
-                <span className="text-blue-600 block">Automatic Orders</span>
-              </h1>
+      {/* Hero Section */}
+      <section className="py-20 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="mb-8">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-100 to-purple-100 px-4 py-2 rounded-full mb-6">
+              <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+              <span className="text-sm font-medium text-gray-700">Automatyzacja sprzedaży telefonicznej</span>
+            </div>
 
-              <p className="text-xl text-gray-600 mb-8">
-                Give your customers a phone number they can call to place orders. Our AI handles everything - from
-                taking the order to collecting delivery details. Perfect for cash-on-delivery businesses.
-              </p>
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent leading-tight">
+              AI Phone Orders
+            </h1>
 
-              <div className="space-y-4 mb-8">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                  <span className="text-gray-700">Never miss a phone order again</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                  <span className="text-gray-700">Collect customer details automatically</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                  <span className="text-gray-700">Works 24/7 - even when you're sleeping</span>
-                </div>
-              </div>
+            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+              Zautomatyzuj przyjmowanie zamówień telefonicznych w swoim sklepie internetowym. Nasza sztuczna
+              inteligencja obsłuży klientów 24/7, zwiększając Twoje sprzedaże.
+            </p>
+          </div>
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Dialog open={isContactOpen} onOpenChange={setIsContactOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="lg" className="gap-2">
-                      <Mail className="h-5 w-5" />
-                      Get Started - Contact Us
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Contact Us</DialogTitle>
-                      <DialogDescription>
-                        Send us a message and we'll help you set up AI phone ordering for your business.
-                      </DialogDescription>
-                    </DialogHeader>
-
-                    <form onSubmit={handleContactSubmit} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email Address</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder="your@email.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          required
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="message">Message</Label>
-                        <Textarea
-                          id="message"
-                          placeholder="Tell us about your business and how we can help..."
-                          value={message}
-                          onChange={(e) => setMessage(e.target.value)}
-                          required
-                          rows={4}
-                        />
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setIsContactOpen(false)}
-                          className="flex-1"
-                        >
-                          Cancel
-                        </Button>
-                        <Button type="submit" disabled={isSubmitting} className="flex-1">
-                          {isSubmitting ? "Sending..." : "Send Message"}
-                        </Button>
-                      </div>
-                    </form>
-                  </DialogContent>
-                </Dialog>
-
-                <Button variant="outline" size="lg" className="gap-2">
-                  <LogIn className="h-5 w-5" />
-                  Existing Customer Login
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+            {isSignedIn ? (
+              <Button 
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 text-lg"
+                onClick={() => window.location.href = '/dashboard'}
+              >
+                Przejdź do panelu
+              </Button>
+            ) : (
+              <SignInButton mode="modal">
+                <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 text-lg">
+                  Zaloguj się do panelu
                 </Button>
-              </div>
-            </div>
+              </SignInButton>
+            )}
 
-            {/* Right Column - Phone Demo Visual */}
-            <div className="flex justify-center">
-              <Card className="w-full max-w-md border-2 border-blue-200 bg-white/80 backdrop-blur shadow-xl">
-                <CardContent className="p-8">
-                  <div className="relative">
-                    {/* Phone Frame */}
-                    <div className="bg-gray-900 rounded-3xl p-4 shadow-lg mx-auto max-w-[280px]">
-                      {/* Phone Screen */}
-                      <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-6 text-white">
-                        <div className="flex justify-center mb-6">
-                          <Phone className="h-16 w-16 text-white/90" />
-                        </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="px-8 py-3 text-lg hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:text-white transition-all duration-200 bg-white/80 backdrop-blur-sm"
+                >
+                  Jestem zainteresowany
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md bg-white/95 backdrop-blur-sm">
+                <DialogHeader>
+                  <DialogTitle className="text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Rozpocznij współpracę
+                  </DialogTitle>
+                  <DialogDescription>
+                    Podaj swoje dane, a skontaktujemy się z Tobą w sprawie wdrożenia AI Phone Orders w Twoim sklepie.
+                  </DialogDescription>
+                </DialogHeader>
 
-                        <h3 className="text-xl font-bold text-center mb-2">Try Our Demo</h3>
-                        <p className="text-sm text-center text-white/80 mb-6">
-                          Call now to experience our AI ordering system
-                        </p>
-
-                        <div className="bg-white/20 rounded-lg p-4 text-center backdrop-blur-sm">
-                          <div className="text-2xl font-bold mb-1">+1 (555) 123-DEMO</div>
-                          <div className="text-xs">Available 24/7</div>
-                        </div>
-
-                        <div className="mt-6 text-center">
-                          <div className="inline-flex items-center justify-center bg-white/20 rounded-full px-3 py-1 text-xs backdrop-blur-sm">
-                            <span className="animate-pulse mr-2 h-2 w-2 rounded-full bg-green-400"></span>
-                            Live Demo Available
-                          </div>
-                        </div>
-                      </div>
+                {!isSubmitted ? (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-blue-600" />
+                        Adres email
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="twoj@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="focus:ring-2 focus:ring-blue-500"
+                      />
                     </div>
 
-                    {/* Decorative Elements */}
-                    <div className="absolute -top-4 -right-4 bg-yellow-400 rounded-full p-3 shadow-lg">
-                      <ShoppingCart className="h-6 w-6 text-yellow-900" />
+                    <div className="space-y-2">
+                      <Label htmlFor="website" className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-purple-600" />
+                        Strona sklepu internetowego
+                      </Label>
+                      <Input
+                        id="website"
+                        type="url"
+                        placeholder="https://twojsklep.pl"
+                        value={website}
+                        onChange={(e) => setWebsite(e.target.value)}
+                        required
+                        className="focus:ring-2 focus:ring-purple-500"
+                      />
                     </div>
 
-                    <div className="absolute -bottom-2 -left-2 bg-green-400 rounded-full p-2 shadow-lg">
-                      <CheckCircle className="h-5 w-5 text-green-900" />
+                    <Button
+                      type="submit"
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                    >
+                      Wyślij zgłoszenie
+                    </Button>
+                  </form>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-gradient-to-r from-green-400 to-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <CheckCircle className="h-8 w-8 text-white" />
                     </div>
+                    <h3 className="text-lg font-semibold text-green-600 mb-2">Zgłoszenie wysłane!</h3>
+                    <p className="text-gray-600">Skontaktujemy się z Tobą wkrótce.</p>
                   </div>
-
-                  {/* Demo Instructions */}
-                  <div className="mt-8 text-center">
-                    <h4 className="font-medium text-gray-900 mb-2">How It Works:</h4>
-                    <ol className="text-sm text-gray-600 space-y-2 text-left list-decimal pl-5">
-                      <li>Call the demo number</li>
-                      <li>Our AI will answer and take your order</li>
-                      <li>Try ordering products and providing delivery details</li>
-                      <li>Experience how natural and efficient it feels</li>
-                    </ol>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                )}
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
+      </section>
 
-        {/* Key Benefits */}
-        <div className="py-16 border-t border-blue-100">
-          <h2 className="text-3xl font-bold text-center mb-12">How AI Phone Orders Helps Your Business</h2>
-          <div className="grid md:grid-cols-3 gap-8 mb-16">
-            <div className="flex flex-col items-center">
-              <div className="bg-blue-100 p-4 rounded-full mb-4">
-                <MessageSquare className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">AI Conversations</h3>
-              <p className="text-gray-600 text-sm text-center">
-                Natural voice AI that understands your customers and takes complete orders
-              </p>
-            </div>
+      {/* Features Section */}
+      <section className="py-16 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+              Dlaczego AI Phone Orders?
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Nasza platforma oferuje kompletne rozwiązanie do automatyzacji sprzedaży telefonicznej
+            </p>
+          </div>
 
-            <div className="flex flex-col items-center">
-              <div className="bg-green-100 p-4 rounded-full mb-4">
-                <ShoppingCart className="h-8 w-8 text-green-600" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Order Management</h3>
-              <p className="text-gray-600 text-sm text-center">
-                Automatic order processing with customer details and delivery information
-              </p>
-            </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-blue-50 to-blue-100">
+              <CardHeader>
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center mb-4">
+                  <Phone className="h-6 w-6 text-white" />
+                </div>
+                <CardTitle className="text-blue-800">Obsługa 24/7</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-gray-700">
+                  AI nigdy nie śpi. Twoi klienci mogą składać zamówienia o każdej porze dnia i nocy.
+                </CardDescription>
+              </CardContent>
+            </Card>
 
-            <div className="flex flex-col items-center">
-              <div className="bg-purple-100 p-4 rounded-full mb-4">
-                <Zap className="h-8 w-8 text-purple-600" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">24/7 Availability</h3>
-              <p className="text-gray-600 text-sm text-center">
-                Never miss an order - your AI assistant works around the clock
-              </p>
-            </div>
+            <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-purple-50 to-purple-100">
+              <CardHeader>
+                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center mb-4">
+                  <ArrowRight className="h-6 w-6 text-white" />
+                </div>
+                <CardTitle className="text-purple-800">Zwiększ sprzedaże</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-gray-700">
+                  Automatyzacja pozwala obsłużyć więcej klientów jednocześnie, zwiększając przychody.
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-emerald-50 to-emerald-100">
+              <CardHeader>
+                <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center mb-4">
+                  <CheckCircle className="h-6 w-6 text-white" />
+                </div>
+                <CardTitle className="text-emerald-800">Łatwa integracja</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-gray-700">
+                  Szybkie wdrożenie z Twoim istniejącym sklepem internetowym bez zmian technicznych.
+                </CardDescription>
+              </CardContent>
+            </Card>
           </div>
         </div>
-      </main>
+      </section>
 
       {/* Footer */}
-      <footer className="container mx-auto px-4 py-8 text-center text-gray-500 text-sm border-t border-gray-200">
-        <p>&copy; 2024 AI Phone Orders. All rights reserved.</p>
+      <footer className="bg-white/80 backdrop-blur-sm border-t py-8 px-6 mt-16">
+        <div className="max-w-6xl mx-auto text-center">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
+              <Phone className="h-5 w-5 text-white" />
+            </div>
+            <span className="font-semibold text-gray-800">AI Phone Orders</span>
+          </div>
+          <p className="text-gray-600">© 2024 AI Phone Orders. Wszystkie prawa zastrzeżone.</p>
+        </div>
       </footer>
     </div>
   )

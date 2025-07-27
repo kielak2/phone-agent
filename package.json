@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@clerk/localizations": "^3.20.4",
     "@clerk/nextjs": "^6.24.0",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-label": "^2.1.7",
@@ -23,6 +24,7 @@
     "next": "15.3.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "svix": "^1.69.0",
     "tailwind-merge": "^3.3.0"
   },
   "devDependencies": {
