@@ -64,24 +64,6 @@ export const getAllUsers = query({
   },
 });
 
-// Deactivate user (for Clerk webhook)
-export const deactivateUser = mutation({
-  args: { clerkId: v.string() },
-  handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
-      .first();
-
-    if (user) {
-      return await ctx.db.patch(user._id, {
-        isActive: false,
-        updatedAt: Date.now(),
-      });
-    }
-    return null;
-  },
-});
 
 // Delete user (for Clerk webhook)
 export const deleteUser = mutation({
