@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog"
 
 export default function LandingPage() {
-  const { isSignedIn, user } = useUser()
+  const { isSignedIn } = useUser()
   const [email, setEmail] = useState("")
   const [website, setWebsite] = useState("")
   const [isSubmitted, setIsSubmitted] = useState(false)

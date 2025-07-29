@@ -48,6 +48,12 @@ export async function POST(req: Request) {
   const eventType = evt.type;
   
   try {
+    // Ensure we have a valid user ID
+    if (!evt.data.id) {
+      console.error('No user ID found in webhook event');
+      return new Response('No user ID found', { status: 400 });
+    }
+    
     switch (eventType) {
       case 'user.created':
         await convex.mutation(api.users.syncUser, {

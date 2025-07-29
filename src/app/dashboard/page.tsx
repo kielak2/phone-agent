@@ -33,7 +33,6 @@ const callsData = [
 
 export default function Dashboard() {
   const { isSignedIn, isLoaded } = useUser()
-  const [selectedCall, setSelectedCall] = useState<any>(null)
   const [isPlaying, setIsPlaying] = useState(false)
 
   // Calculate stats for different time periods
@@ -211,7 +210,7 @@ export default function Dashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {callsData.map((call, index) => {
+                {callsData.map((call) => {
                   const callAge = getCallAge(call.date)
                   return (
                     <TableRow
@@ -241,7 +240,6 @@ export default function Dashboard() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => setSelectedCall(call)}
                               className="hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:text-white transition-all duration-200"
                             >
                               View Details
