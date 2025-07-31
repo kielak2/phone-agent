@@ -13,7 +13,7 @@ export const syncUser = mutation({
     
     // Check if user already exists
     const existingUser = await ctx.db
-      .query("users")
+      .query("user")
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
       .first();
 
@@ -26,7 +26,7 @@ export const syncUser = mutation({
       });
     } else {
       // Create new user
-      return await ctx.db.insert("users", {
+      return await ctx.db.insert("user", {
         clerkId: args.clerkId,
         email: args.email,
         createdAt: now,
@@ -42,7 +42,7 @@ export const getUserByClerkId = query({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("users")
+      .query("user")
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
       .first();
   },
@@ -50,7 +50,7 @@ export const getUserByClerkId = query({
 
 // Get user by Convex ID
 export const getUser = query({
-  args: { userId: v.id("users") },
+  args: { userId: v.id("user") },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.userId);
   },
@@ -60,7 +60,7 @@ export const getUser = query({
 export const getAllUsers = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("users").collect();
+    return await ctx.db.query("user").collect();
   },
 });
 
@@ -70,14 +70,14 @@ export const deleteUser = mutation({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {
     const user = await ctx.db
-      .query("users")
+      .query("user")
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
       .first();
 
     if (user) {
       // First delete all phone numbers associated with this user
       const phoneNumbers = await ctx.db
-        .query("phoneNumbers")
+        .query("phoneNumber")
         .withIndex("by_user_id", (q) => q.eq("userId", user._id))
         .collect();
 
