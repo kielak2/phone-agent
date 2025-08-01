@@ -4,7 +4,7 @@ import { v } from "convex/values";
 // Add a phone number to a user
 export const addPhoneNumber = mutation({
   args: {
-    userId: v.id("users"),
+    userId: v.id("user"),
     phoneNumber: v.string(),
   },
   handler: async (ctx, args) => {
@@ -17,7 +17,7 @@ export const addPhoneNumber = mutation({
 
     // Check if phone number already exists for this user
     const existingPhoneNumber = await ctx.db
-      .query("phoneNumbers")
+      .query("phoneNumber")
       .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
       .filter((q) => q.eq(q.field("phoneNumber"), args.phoneNumber))
       .first();
@@ -26,7 +26,7 @@ export const addPhoneNumber = mutation({
       throw new Error("Phone number already exists for this user");
     }
 
-    return await ctx.db.insert("phoneNumbers", {
+    return await ctx.db.insert("phoneNumber", {
       userId: args.userId,
       phoneNumber: args.phoneNumber,
       createdAt: now,
@@ -37,10 +37,10 @@ export const addPhoneNumber = mutation({
 
 // Get all phone numbers for a user
 export const getPhoneNumbersByUser = query({
-  args: { userId: v.id("users") },
+  args: { userId: v.id("user") },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("phoneNumbers")
+      .query("phoneNumber")
       .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
       .collect();
   },
@@ -48,7 +48,7 @@ export const getPhoneNumbersByUser = query({
 
 // Get phone number by ID
 export const getPhoneNumber = query({
-  args: { phoneNumberId: v.id("phoneNumbers") },
+  args: { phoneNumberId: v.id("phoneNumber") },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.phoneNumberId);
   },
@@ -57,7 +57,7 @@ export const getPhoneNumber = query({
 // Update phone number
 export const updatePhoneNumber = mutation({
   args: {
-    phoneNumberId: v.id("phoneNumbers"),
+    phoneNumberId: v.id("phoneNumber"),
     phoneNumber: v.string(),
   },
   handler: async (ctx, args) => {
@@ -75,7 +75,7 @@ export const updatePhoneNumber = mutation({
     }
 
     const duplicatePhoneNumber = await ctx.db
-      .query("phoneNumbers")
+      .query("phoneNumber")
       .withIndex("by_user_id", (q) => q.eq("userId", existingPhoneNumber.userId))
       .filter((q) => 
         q.and(
@@ -98,7 +98,7 @@ export const updatePhoneNumber = mutation({
 
 // Delete phone number
 export const deletePhoneNumber = mutation({
-  args: { phoneNumberId: v.id("phoneNumbers") },
+  args: { phoneNumberId: v.id("phoneNumber") },
   handler: async (ctx, args) => {
     return await ctx.db.delete(args.phoneNumberId);
   },
@@ -108,7 +108,7 @@ export const deletePhoneNumber = mutation({
 export const getPhoneNumberByNumber = query({
   args: { phoneNumber: v.string() },
   handler: async (ctx, args) => {
-    const phoneNumbers = await ctx.db.query("phoneNumbers").collect();
+    const phoneNumbers = await ctx.db.query("phoneNumber").collect();
     return phoneNumbers.find(pn => pn.phoneNumber === args.phoneNumber);
   },
 }); 

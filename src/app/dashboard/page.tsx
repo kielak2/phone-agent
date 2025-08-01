@@ -1,21 +1,9 @@
-"use client"
-
-import { useState } from "react"
-import { Phone, Play, Pause, Download, TrendingUp, Clock, Users, PhoneCall } from "lucide-react"
-import { Button } from "@/components/ui/button"
+ import { Phone, TrendingUp, Clock, Users, PhoneCall } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { UserButton, SignIn, useUser } from "@clerk/nextjs"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { UserButton} from "@clerk/nextjs"
+import { CallDetailsDialog } from "./components/CallDetailsDialog"
 
 // Mock data with more recent dates
 const callsData = [
@@ -72,8 +60,6 @@ const callsData = [
 ]
 
 export default function Dashboard() {
-  const { isSignedIn, isLoaded } = useUser()
-  const [isPlaying, setIsPlaying] = useState(false)
 
   // Calculate stats for different time periods
   const today = new Date().toISOString().split("T")[0]
@@ -87,7 +73,7 @@ export default function Dashboard() {
     callsLast30Days: callsData.filter((call) => call.date >= thirtyDaysAgo).length,
   }
 
-  const getCallAge = (date) => {
+  const getCallAge = (date: string) => {
     const callDate = new Date(date)
     const today = new Date()
     const diffTime = Math.abs(today.getTime() - callDate.getTime())
@@ -97,49 +83,6 @@ export default function Dashboard() {
     if (diffDays <= 7) return "week"
     if (diffDays <= 30) return "month"
     return "old"
-  }
-
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!isSignedIn) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full">
-          <div className="text-center mb-8">
-            <div className="p-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl w-fit mx-auto mb-6 shadow-xl">
-              <Phone className="h-10 w-10 text-white" />
-            </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">
-              AI Phone Hub
-            </h1>
-            <p className="text-gray-600">Sign in to access your dashboard</p>
-          </div>
-          <SignIn
-            appearance={{
-              elements: {
-                rootBox: "w-full",
-                card: "shadow-xl border-2 border-gray-200 bg-white/95 backdrop-blur-sm",
-                headerTitle: "text-xl bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent",
-                headerSubtitle: "text-gray-600",
-                formButtonPrimary:
-                  "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700",
-                formFieldInput: "border-2 border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500",
-                footerActionLink: "text-indigo-600 hover:text-indigo-700",
-              },
-            }}
-          />
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -281,84 +224,7 @@ export default function Dashboard() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="border-2 border-gray-300 bg-white text-gray-700 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white hover:border-transparent transition-all duration-300 font-medium"
-                            >
-                              View Details
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-white border-2 border-gray-200 shadow-2xl">
-                            <DialogHeader>
-                              <DialogTitle className="text-2xl bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                                Call Details
-                              </DialogTitle>
-                              <DialogDescription className="text-gray-600 text-base font-medium">
-                                {call.phoneNumber} • {call.date} at {call.time} • Duration: {call.duration}
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="grid gap-6 mt-6">
-                              {/* Audio Player */}
-                              <Card className="border-2 border-blue-200 bg-blue-50/50 shadow-lg">
-                                <CardHeader>
-                                  <CardTitle className="text-lg flex items-center gap-3 text-gray-800">
-                                    <div className="p-2 bg-blue-100 rounded-lg border border-blue-200">
-                                      <Play className="h-5 w-5 text-blue-600" />
-                                    </div>
-                                    Call Recording
-                                  </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="flex items-center gap-4">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => setIsPlaying(!isPlaying)}
-                                      className="border-2 border-blue-300 bg-white text-blue-600 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-colors font-medium"
-                                    >
-                                      {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                                      {isPlaying ? "Pause" : "Play"}
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="border-2 border-emerald-300 bg-white text-emerald-600 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-colors font-medium"
-                                    >
-                                      <Download className="w-4 h-4 mr-2" />
-                                      Download
-                                    </Button>
-                                    <div className="flex-1 bg-gray-200 h-3 rounded-full overflow-hidden border border-gray-300">
-                                      <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full w-1/3 transition-all duration-300"></div>
-                                    </div>
-                                    <span className="text-sm text-gray-600 font-mono font-medium">{call.duration}</span>
-                                  </div>
-                                </CardContent>
-                              </Card>
-
-                              {/* Transcript */}
-                              <Card className="border-2 border-emerald-200 bg-emerald-50/50 shadow-lg">
-                                <CardHeader>
-                                  <CardTitle className="text-lg flex items-center gap-3 text-gray-800">
-                                    <div className="p-2 bg-emerald-100 rounded-lg border border-emerald-200">
-                                      <div className="w-5 h-5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"></div>
-                                    </div>
-                                    AI Transcript
-                                  </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <Textarea
-                                    value={call.transcript}
-                                    readOnly
-                                    className="min-h-[150px] resize-none bg-white border-2 border-emerald-200 text-gray-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                                  />
-                                </CardContent>
-                              </Card>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
+                        <CallDetailsDialog call={call} />
                       </TableCell>
                     </TableRow>
                   )

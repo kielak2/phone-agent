@@ -25,7 +25,6 @@ export async function POST(req: Request) {
   const body = JSON.stringify(payload);
 
   // Create a new Svix instance with your secret.
-  console.log('CLERK_WEBHOOK_SECRET', process.env.CLERK_WEBHOOK_SECRET);
   const wh = new Webhook(process.env.CLERK_WEBHOOK_SECRET || '');
 
   let evt: WebhookEvent;
@@ -56,7 +55,7 @@ export async function POST(req: Request) {
     
     switch (eventType) {
       case 'user.created':
-        await convex.mutation(api.users.syncUser, {
+        await convex.mutation(api.user.syncUser, {
           clerkId: evt.data.id,
           email: evt.data.email_addresses?.[0]?.email_address,
           isActive: true,
@@ -65,7 +64,7 @@ export async function POST(req: Request) {
         break;
         
       case 'user.updated':
-        await convex.mutation(api.users.syncUser, {
+        await convex.mutation(api.user.syncUser, {
           clerkId: evt.data.id,
           email: evt.data.email_addresses?.[0]?.email_address,
           isActive: true,
@@ -74,7 +73,7 @@ export async function POST(req: Request) {
         break;
         
       case 'user.deleted':
-        await convex.mutation(api.users.deleteUser, {
+        await convex.mutation(api.user.deleteUser, {
           clerkId: evt.data.id,
         });
         break;

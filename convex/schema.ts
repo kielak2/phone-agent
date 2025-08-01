@@ -2,7 +2,7 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
-  users: defineTable({
+  user: defineTable({
     clerkId: v.string(), // Clerk user ID
     email: v.optional(v.string()), // Cached from Clerk
     createdAt: v.number(), // Unix timestamp
@@ -11,8 +11,8 @@ export default defineSchema({
   })
     .index("by_clerk_id", ["clerkId"]),
 
-  phoneNumbers: defineTable({
-    userId: v.id("users"), // Reference to user
+  phoneNumber: defineTable({
+    userId: v.id("user"), // Reference to user
     phoneNumber: v.string(), // E.164 format
     createdAt: v.number(),
     updatedAt: v.number(),
