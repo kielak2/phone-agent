@@ -1,8 +1,8 @@
- import { Phone, TrendingUp, Clock, Users, PhoneCall } from "lucide-react"
+import { Phone, TrendingUp, Clock, Users, PhoneCall, Timer } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { UserButton} from "@clerk/nextjs"
+import { UserButton } from "@clerk/nextjs"
 import { CallDetailsDialog } from "./components/CallDetailsDialog"
 
 // Mock data with more recent dates
@@ -60,8 +60,6 @@ const callsData = [
 ]
 
 export default function Dashboard() {
-
-  // Calculate stats for different time periods
   const today = new Date().toISOString().split("T")[0]
   const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
@@ -75,10 +73,8 @@ export default function Dashboard() {
 
   const getCallAge = (date: string) => {
     const callDate = new Date(date)
-    const today = new Date()
-    const diffTime = Math.abs(today.getTime() - callDate.getTime())
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
+    const now = new Date()
+    const diffDays = Math.ceil(Math.abs(now.getTime() - callDate.getTime()) / (1000 * 60 * 60 * 24))
     if (diffDays === 1) return "today"
     if (diffDays <= 7) return "week"
     if (diffDays <= 30) return "month"
@@ -86,154 +82,154 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50">
-      <div className="max-w-7xl mx-auto p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+      <div className="mx-auto max-w-7xl p-6">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="rounded-2xl border border-teal-200 bg-teal-600 p-3 shadow-md">
+              <Phone className="h-7 w-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">
+                AI Phone Hub
+              </h1>
+              <p className="mt-1 text-slate-600">Monitor and analyze your AI-powered calls</p>
+            </div>
+          </div>
+          <UserButton
+            appearance={{
+              elements: {
+                avatarBox: "w-11 h-11 ring-4 ring-teal-100 border-2 border-white shadow-md",
+                userButtonPopoverCard: "shadow-xl border border-slate-200 bg-white",
+                userButtonPopoverActionButton: "hover:bg-teal-50 text-slate-700",
+              },
+            }}
+          />
+        </div>
+
+        {/* Account + Stats */}
+        <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-md backdrop-blur">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-lg border-2 border-indigo-200">
-                <Phone className="h-8 w-8 text-white" />
+              <div className="rounded-xl border border-slate-300 bg-slate-100 p-3">
+                <PhoneCall className="h-6 w-6 text-teal-700" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  AI Phone Hub
-                </h1>
-                <p className="text-gray-600 mt-1">Monitor and analyze your AI-powered calls</p>
+                <p className="text-sm font-medium text-slate-500">Active Phone Number</p>
+                <p className="font-mono text-lg font-semibold text-teal-700">+1-555-AI-PHONE</p>
               </div>
             </div>
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: "w-12 h-12 ring-4 ring-indigo-100 border-2 border-white shadow-lg",
-                  userButtonPopoverCard: "shadow-xl border-2 border-gray-200 bg-white",
-                  userButtonPopoverActionButton: "hover:bg-indigo-50 text-gray-700",
-                },
-              }}
-            />
-          </div>
 
-          {/* Account Info Bar */}
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 mb-8 border-2 border-gray-200 shadow-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl border-2 border-gray-300">
-                  <PhoneCall className="h-6 w-6 text-indigo-600" />
-                </div>
-                <div>
-                  <p className="text-gray-500 text-sm font-medium">Active Phone Number</p>
-                  <p className="font-mono text-xl font-bold text-indigo-600">+1-555-AI-PHONE</p>
-                </div>
-              </div>
-              
-              {/* Elegant Stats Row */}
-              <div className="flex items-center gap-8">
-                <div className="text-center">
-                  <div className="flex items-center gap-2 mb-1">
-                    <TrendingUp className="h-4 w-4 text-emerald-600" />
-                    <span className="text-2xl font-bold text-gray-800">{stats.totalCalls}</span>
-                  </div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Total Calls</p>
-                </div>
-                <div className="w-px h-8 bg-gray-300"></div>
-                <div className="text-center">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Clock className="h-4 w-4 text-blue-600" />
-                    <span className="text-2xl font-bold text-gray-800">{stats.callsToday}</span>
-                  </div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Today</p>
-                </div>
-                <div className="w-px h-8 bg-gray-300"></div>
-                <div className="text-center">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Users className="h-4 w-4 text-purple-600" />
-                    <span className="text-2xl font-bold text-gray-800">{stats.callsLastWeek}</span>
-                  </div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">7 Days</p>
-                </div>
-                <div className="w-px h-8 bg-gray-300"></div>
-                <div className="text-center">
-                  <div className="flex items-center gap-2 mb-1">
-                    <PhoneCall className="h-4 w-4 text-orange-600" />
-                    <span className="text-2xl font-bold text-gray-800">{stats.callsLast30Days}</span>
-                  </div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">30 Days</p>
-                </div>
-              </div>
+            <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-4 md:w-auto">
+              <StatChip icon={<TrendingUp className="h-4 w-4 text-teal-700" />} label="Total Calls" value={stats.totalCalls} />
+              <StatChip icon={<Clock className="h-4 w-4 text-teal-700" />} label="Today" value={stats.callsToday} />
+              <StatChip icon={<Users className="h-4 w-4 text-teal-700" />} label="7 Days" value={stats.callsLastWeek} />
+              <StatChip icon={<PhoneCall className="h-4 w-4 text-teal-700" />} label="30 Days" value={stats.callsLast30Days} />
             </div>
           </div>
         </div>
 
         {/* Call History */}
-        <Card className="border-2 border-gray-200 bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl overflow-hidden">
-          <CardHeader className="bg-gradient-to-r from-gray-50 to-indigo-50 border-b-2 border-gray-200 p-6">
+        <Card className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+          <CardHeader className="border-b border-slate-200 bg-slate-50 p-5">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-2xl text-gray-800 flex items-center gap-3">
-                  <div className="p-2 bg-indigo-100 rounded-lg border border-indigo-200">
-                    <Phone className="h-5 w-5 text-indigo-600" />
+                <CardTitle className="flex items-center gap-3 text-xl text-slate-900">
+                  <div className="rounded-lg border border-teal-200 bg-teal-50 p-2">
+                    <Phone className="h-5 w-5 text-teal-700" />
                   </div>
                   Call History
                 </CardTitle>
-                <CardDescription className="text-gray-600 mt-2 font-medium">
+                <CardDescription className="mt-1 text-slate-600">
                   Complete record of all incoming calls with AI transcription
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b-2 border-gray-200 bg-gray-50/50">
-                  <TableHead className="font-bold text-gray-700 p-6">Date & Time</TableHead>
-                  <TableHead className="font-bold text-gray-700">Phone Number</TableHead>
-                  <TableHead className="font-bold text-gray-700">Duration</TableHead>
-                  <TableHead className="font-bold text-gray-700">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {callsData.map((call, index) => {
-                  const callAge = getCallAge(call.date)
-                  return (
-                    <TableRow
-                      key={call.id}
-                      className={`border-b border-gray-200 hover:bg-indigo-50/50 transition-all duration-300 ${
-                        index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
-                      }`}
-                    >
-                      <TableCell className="p-6">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gray-100 rounded-lg border border-gray-200">
-                            <Clock className="h-4 w-4 text-gray-600" />
+            <div className="relative overflow-x-auto">
+              <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-white" />
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-slate-200 bg-slate-50/70">
+                    <TableHead className="p-5 font-semibold text-slate-700">Date & Time</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Phone Number</TableHead>
+                    <TableHead className="text-right font-semibold text-slate-700">Duration</TableHead>
+                    <TableHead className="pr-5 text-right font-semibold text-slate-700">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {callsData.map((call, index) => {
+                    const callAge = getCallAge(call.date)
+                    return (
+                      <TableRow
+                        key={call.id}
+                        className={`group border-b border-slate-200 transition-all duration-200 hover:bg-teal-50/50 ${
+                          index % 2 === 0 ? "bg-white" : "bg-slate-50/50"
+                        }`}
+                      >
+                        <TableCell className="p-5">
+                          <div className="flex items-center gap-3">
+                            <div className="rounded-lg border border-slate-200 bg-slate-100 p-2">
+                              <Clock className="h-4 w-4 text-slate-600" />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-900">
+                                {call.date}
+                              </span>
+                              <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600">
+                                {call.time}
+                              </span>
+                            </div>
+                            {callAge === "today" && (
+                              <Badge className="ml-1 border border-teal-200 bg-teal-50 text-teal-800">
+                                New
+                              </Badge>
+                            )}
                           </div>
-                          <div>
-                            <div className="font-semibold text-gray-800">{call.date}</div>
-                            <div className="text-sm text-gray-500">{call.time}</div>
-                          </div>
-                          {callAge === "today" && (
-                            <Badge className="bg-emerald-100 text-emerald-700 border-2 border-emerald-200 hover:bg-emerald-100 font-medium">
-                              New
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-mono text-indigo-600 font-bold">{call.phoneNumber}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="font-mono bg-gray-100 text-gray-700 border-2 border-gray-300 font-medium">
-                          {call.duration}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <CallDetailsDialog call={call} />
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
+                        </TableCell>
+                        <TableCell className="font-mono font-semibold text-teal-700">
+                          {call.phoneNumber}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-slate-100 px-2.5 py-1 font-mono text-sm text-slate-700">
+                            <Timer className="h-3.5 w-3.5 text-slate-500" />
+                            {call.duration}
+                          </span>
+                        </TableCell>
+                        <TableCell className="pr-5 text-right">
+                          <CallDetailsDialog call={call} />
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </div>
+    </div>
+  )
+}
+
+function StatChip({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: number
+}) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+      <div className="mb-1 flex items-center justify-center gap-2">
+        {icon}
+        <span className="text-xl font-bold text-slate-900">{value}</span>
+      </div>
+      <p className="text-center text-xs uppercase tracking-wide text-slate-500">{label}</p>
     </div>
   )
 }

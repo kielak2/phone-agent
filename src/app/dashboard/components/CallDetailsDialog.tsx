@@ -36,27 +36,28 @@ export function CallDetailsDialog({ call }: CallDetailsDialogProps) {
         <Button
           variant="outline"
           size="sm"
-          className="border-2 border-gray-300 bg-white text-gray-700 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white hover:border-transparent transition-all duration-300 font-medium"
+          className="border border-slate-300 bg-white text-slate-800 transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-800"
         >
           View Details
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-white border-2 border-gray-200 shadow-2xl">
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto border border-slate-200 bg-white shadow-2xl">
         <DialogHeader>
-          <DialogTitle className="text-2xl bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+          <DialogTitle className="text-2xl font-bold text-slate-900">
             Call Details
           </DialogTitle>
-          <DialogDescription className="text-gray-600 text-base font-medium">
+          <DialogDescription className="text-base font-medium text-slate-600">
             {call.phoneNumber} • {call.date} at {call.time} • Duration: {call.duration}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-6 mt-6">
+
+        <div className="mt-6 grid gap-6">
           {/* Audio Player */}
-          <Card className="border-2 border-blue-200 bg-blue-50/50 shadow-lg">
+          <Card className="border border-teal-200 bg-teal-50/50 shadow-md">
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-3 text-gray-800">
-                <div className="p-2 bg-blue-100 rounded-lg border border-blue-200">
-                  <Play className="h-5 w-5 text-blue-600" />
+              <CardTitle className="flex items-center gap-3 text-slate-900">
+                <div className="rounded-lg border border-teal-200 bg-teal-50 p-2">
+                  <Play className="h-5 w-5 text-teal-700" />
                 </div>
                 Call Recording
               </CardTitle>
@@ -67,33 +68,33 @@ export function CallDetailsDialog({ call }: CallDetailsDialogProps) {
                   variant="outline"
                   size="sm"
                   onClick={() => setIsPlaying(!isPlaying)}
-                  className="border-2 border-blue-300 bg-white text-blue-600 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-colors font-medium"
+                  className="border border-teal-300 bg-white text-teal-700 transition-colors hover:border-teal-500 hover:bg-teal-600 hover:text-white"
                 >
-                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                  {isPlaying ? "Pause" : "Play"}
+                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  <span className="ml-2">{isPlaying ? "Pause" : "Play"}</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-2 border-emerald-300 bg-white text-emerald-600 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-colors font-medium"
+                  className="border border-slate-300 bg-white text-slate-800 transition-colors hover:border-slate-400 hover:bg-slate-100"
                 >
-                  <Download className="w-4 h-4 mr-2" />
+                  <Download className="mr-2 h-4 w-4" />
                   Download
                 </Button>
-                <div className="flex-1 bg-gray-200 h-3 rounded-full overflow-hidden border border-gray-300">
-                  <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full w-1/3 transition-all duration-300"></div>
+                <div className="h-3 flex-1 overflow-hidden rounded-full border border-slate-300 bg-slate-200">
+                  <div className="h-full w-1/3 rounded-full bg-teal-600 transition-all duration-300" />
                 </div>
-                <span className="text-sm text-gray-600 font-mono font-medium">{call.duration}</span>
+                <span className="font-mono text-sm text-slate-700">{call.duration}</span>
               </div>
             </CardContent>
           </Card>
 
           {/* Transcript */}
-          <Card className="border-2 border-emerald-200 bg-emerald-50/50 shadow-lg">
+          <Card className="border border-slate-200 bg-slate-50/50 shadow-md">
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-3 text-gray-800">
-                <div className="p-2 bg-emerald-100 rounded-lg border border-emerald-200">
-                  <div className="w-5 h-5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"></div>
+              <CardTitle className="flex items-center gap-3 text-slate-900">
+                <div className="rounded-lg border border-slate-200 bg-white p-2">
+                  <div className="h-5 w-5 rounded-full bg-teal-600" />
                 </div>
                 AI Transcript
               </CardTitle>
@@ -102,7 +103,7 @@ export function CallDetailsDialog({ call }: CallDetailsDialogProps) {
               <Textarea
                 value={call.transcript}
                 readOnly
-                className="min-h-[150px] resize-none bg-white border-2 border-emerald-200 text-gray-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="min-h-[150px] resize-none bg-white text-slate-900 focus:ring-2 focus:ring-teal-500"
               />
             </CardContent>
           </Card>
@@ -110,4 +111,4 @@ export function CallDetailsDialog({ call }: CallDetailsDialogProps) {
       </DialogContent>
     </Dialog>
   )
-} 
+}
