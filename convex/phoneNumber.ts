@@ -6,6 +6,7 @@ export const addPhoneNumber = mutation({
   args: {
     userId: v.id("user"),
     phoneNumber: v.string(),
+    agentId: v.string(),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -15,20 +16,30 @@ export const addPhoneNumber = mutation({
       throw new Error("Phone number must be in E.164 format (e.g., +1234567890)");
     }
 
-    // Check if phone number already exists for this user
+    // Check if phone number already exists for any user
     const existingPhoneNumber = await ctx.db
       .query("phoneNumber")
-      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
       .filter((q) => q.eq(q.field("phoneNumber"), args.phoneNumber))
       .first();
 
     if (existingPhoneNumber) {
-      throw new Error("Phone number already exists for this user");
+      throw new Error("Phone number already exists for another user");
     }
+
+    //Check if agentId is already associated with another user
+    const existingAgentId = await ctx.db
+      .query("phoneNumber")
+      .filter((q) => q.eq(q.field("agentId"), args.agentId))
+      .first();
+      
+      if (existingAgentId) {
+        throw new Error("Agent ID already associated with another user");
+      }
 
     return await ctx.db.insert("phoneNumber", {
       userId: args.userId,
       phoneNumber: args.phoneNumber,
+      agentId: args.agentId,
       createdAt: now,
       updatedAt: now,
     });
@@ -68,25 +79,14 @@ export const updatePhoneNumber = mutation({
       throw new Error("Phone number must be in E.164 format (e.g., +1234567890)");
     }
 
-    // Check if the new phone number already exists for this user
-    const existingPhoneNumber = await ctx.db.get(args.phoneNumberId);
-    if (!existingPhoneNumber) {
-      throw new Error("Phone number not found");
-    }
-
-    const duplicatePhoneNumber = await ctx.db
+    // Check if phone number already exists for any user
+    const existingPhoneNumber = await ctx.db
       .query("phoneNumber")
-      .withIndex("by_user_id", (q) => q.eq("userId", existingPhoneNumber.userId))
-      .filter((q) => 
-        q.and(
-          q.eq(q.field("phoneNumber"), args.phoneNumber),
-          q.neq(q.field("_id"), args.phoneNumberId)
-        )
-      )
+      .filter((q) => q.eq(q.field("phoneNumber"), args.phoneNumber))
       .first();
 
-    if (duplicatePhoneNumber) {
-      throw new Error("Phone number already exists for this user");
+    if (existingPhoneNumber) {
+      throw new Error("Phone number already exists for another user");
     }
 
     return await ctx.db.patch(args.phoneNumberId, {

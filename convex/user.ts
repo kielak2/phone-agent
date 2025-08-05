@@ -37,6 +37,17 @@ export const syncUser = mutation({
   },
 });
 
+export const getUserByAgentId = query({
+  args: { agentId: v.string() },
+  handler: async (ctx, args) => {
+    const phoneNumber = await ctx.db
+      .query("phoneNumber")
+      .withIndex("by_agent_id", (q) => q.eq("agentId", args.agentId))
+      .first();
+    return phoneNumber ? phoneNumber.userId : null;
+  },
+});
+
 // Get user by Clerk ID
 export const getUserByClerkId = query({
   args: { clerkId: v.string() },
