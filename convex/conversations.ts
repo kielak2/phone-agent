@@ -1,4 +1,5 @@
 import { mutation, query } from "./_generated/server";
+import { api } from "./_generated/api";
 import { v } from "convex/values";
 
 // Mutation to add a new conversation
@@ -38,4 +39,24 @@ export const getConversationsByUser = query({
       .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
       .collect();
   },
-}); 
+});
+
+// Query to get the most recent conversation by startTime across all users
+export const getMostRecentConversation = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("conversation")
+      .withIndex("by_start_time")
+      .order("desc")
+      .first();
+  },
+});
+
+export const triggerConversationSync = mutation({
+  args: {},
+  async handler(ctx) {
+    await ctx.scheduler.runAfter(0, api.syncElevenLabs.syncConversationsFromElevenLabs);
+    return { enqueued: true };
+  },
+});

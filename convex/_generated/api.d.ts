@@ -15,6 +15,7 @@ import type {
 } from "convex/server";
 import type * as conversations from "../conversations.js";
 import type * as phoneNumber from "../phoneNumber.js";
+import type * as syncElevenLabs from "../syncElevenLabs.js";
 import type * as user from "../user.js";
 
 /**
@@ -28,6 +29,7 @@ import type * as user from "../user.js";
 declare const fullApi: ApiFromModules<{
   conversations: typeof conversations;
   phoneNumber: typeof phoneNumber;
+  syncElevenLabs: typeof syncElevenLabs;
   user: typeof user;
 }>;
 export declare const api: FilterApi<

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import client from '@/lib/elevenlabs'
+import { ConvexHttpClient } from 'convex/browser'
+import { api } from '../../../../convex/_generated/api'
 
-export async function GET(request: NextRequest) {
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
+
+export async function POST(request: NextRequest) {
   try {
     // Check if API key is configured
     if (!process.env.ELEVENLABS_API_KEY) {
@@ -11,34 +15,62 @@ export async function GET(request: NextRequest) {
       )
     }
     
+    // Get the most recent conversation from our database
+    const mostRecentConversation = await convex.query(api.conversations.getMostRecentConversation)
+    const cutoffTime = mostRecentConversation 
+      ? mostRecentConversation.startTime + (24 * 60 * 60) // Add 24 hours in seconds
+      : 0 // If no conversations exist, get all
+    
     // Fetch conversations from ElevenLabs using the new client
     const response = await client.conversationalAi.conversations.list()
     
-    // Transform the data to be more frontend-friendly
-    const transformedConversations = response.conversations.map(conv => ({
-      id: conv.conversationId,
-      agentId: conv.agentId,
-      agentName: conv.agentName,
-      startTime: conv.startTimeUnixSecs,
-      duration: conv.callDurationSecs,
-      messageCount: conv.messageCount,
-      status: conv.status,
-      callSuccessful: conv.callSuccessful,
-      transcriptSummary: '',
-      callSummaryTitle: '',
-      // Convert Unix timestamp to readable date
-      startDate: new Date(conv.startTimeUnixSecs * 1000).toISOString().split('T')[0],
-      startTimeFormatted: new Date(conv.startTimeUnixSecs * 1000).toLocaleTimeString(),
-      // Convert duration to MM:SS format
-      durationFormatted: `${Math.floor(conv.callDurationSecs / 60)}:${(conv.callDurationSecs % 60).toString().padStart(2, '0')}`
-    }))
+    // Filter conversations to only process newer ones
+    const conversationsToProcess = response.conversations.filter(conv => 
+      conv.startTimeUnixSecs > cutoffTime
+    )
     
-    return NextResponse.json({
-      conversations: transformedConversations,
-      hasMore: response.hasMore,
-      nextCursor: response.nextCursor,
-      totalCount: response.conversations.length
-    })
+    console.log(`Found ${response.conversations.length} total conversations, processing ${conversationsToProcess.length} newer than cutoff`)
+    
+    // Save conversations to Convex database
+    let savedCount = 0
+    let skippedCount = 0
+    
+    for (const conv of conversationsToProcess) {
+      try {
+        // Get userId by agentId
+        const userId = await convex.query(api.user.getUserByAgentId, { agentId: conv.agentId })
+        
+        if (userId) {
+          // Check if conversation already exists
+          const existingConversations = await convex.query(api.conversations.getConversationsByUser, { userId })
+          const exists = existingConversations.some((existing: any) => existing.conversationId === conv.conversationId)
+          
+          if (!exists) {
+            // Save new conversation to Convex
+            const now = Date.now()
+            await convex.mutation(api.conversations.addConversation, {
+              userId: userId,
+              conversationId: conv.conversationId,
+              agentId: conv.agentId,
+              agentName: conv.agentName,
+              startTime: conv.startTimeUnixSecs,
+              duration: conv.callDurationSecs,
+              callSuccessful: conv.callSuccessful as "success" | "failure" | "unknown",
+              createdAt: now,
+              updatedAt: now,
+            })
+            savedCount++
+          } else {
+            skippedCount++
+          }
+        }
+      } catch (error) {
+        console.error(`Error saving conversation ${conv.conversationId}:`, error)
+      }
+    }
+    
+    console.log(`Conversations processed: ${savedCount} saved, ${skippedCount} skipped`)
+    return NextResponse.json({ success: true, savedCount, skippedCount }, { status: 200 })
     
   } catch (error) {
     console.error('Error fetching conversations:', error)

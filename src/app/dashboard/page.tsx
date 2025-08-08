@@ -1,9 +1,12 @@
+'use client'
 import { Phone, TrendingUp, Clock, Users, PhoneCall, Timer } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { UserButton } from "@clerk/nextjs"
+import { UserButton, useUser } from "@clerk/nextjs"
 import { CallDetailsDialog } from "./components/CallDetailsDialog"
+import { useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
 
 // Mock data with more recent dates
 const callsData = [
@@ -60,6 +63,18 @@ const callsData = [
 ]
 
 export default function Dashboard() {
+  const { user } = useUser()
+  
+  // Get user data from Convex
+  const convexUser = useQuery(api.user.getUserByClerkId, 
+    user?.id ? { clerkId: user.id } : "skip"
+  )
+  
+  // Get user's phone numbers
+  const phoneNumbers = useQuery(api.phoneNumber.getPhoneNumbersByUser,
+    convexUser?._id ? { userId: convexUser._id } : "skip"
+  )
+
   const today = new Date().toISOString().split("T")[0]
   const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
@@ -117,7 +132,11 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-500">Active Phone Number</p>
-                <p className="font-mono text-lg font-semibold text-teal-700">+1-555-AI-PHONE</p>
+                <p className="font-mono text-lg font-semibold text-teal-700">
+                  {phoneNumbers && phoneNumbers.length > 0 
+                    ? phoneNumbers[0].phoneNumber 
+                    : "+1-555-AI-PHONE"}
+                </p>
               </div>
             </div>
 
