@@ -5,7 +5,6 @@ export default defineSchema({
   user: defineTable({
     clerkId: v.string(),
     email: v.optional(v.string()),
-    createdAt: v.number(),
     updatedAt: v.number(),
     isActive: v.boolean(),
   })
@@ -15,7 +14,6 @@ export default defineSchema({
     userId: v.id("user"),
     agentId: v.string(),
     phoneNumber: v.string(),
-    createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_user_id", ["userId"])
@@ -29,7 +27,6 @@ export default defineSchema({
     startTime: v.number(),
     duration: v.number(),
     callSuccessful: v.union(v.literal("success"), v.literal("failure"), v.literal("unknown")),
-    createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_user_id", ["userId"])

@@ -56,7 +56,6 @@ export async function POST(request: NextRequest) {
               startTime: conv.startTimeUnixSecs,
               duration: conv.callDurationSecs,
               callSuccessful: conv.callSuccessful as "success" | "failure" | "unknown",
-              createdAt: now,
               updatedAt: now,
             })
             savedCount++

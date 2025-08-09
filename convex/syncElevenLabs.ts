@@ -36,7 +36,6 @@ export const syncConversationsFromElevenLabs = action({
         startTime: conv.startTimeUnixSecs,
         duration: conv.callDurationSecs,
         callSuccessful: (conv.callSuccessful ?? "unknown"),
-        createdAt: now,
         updatedAt: now,
       });
       savedCount++;

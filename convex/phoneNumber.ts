@@ -40,7 +40,6 @@ export const addPhoneNumber = mutation({
       userId: args.userId,
       phoneNumber: args.phoneNumber,
       agentId: args.agentId,
-      createdAt: now,
       updatedAt: now,
     });
   },

@@ -29,7 +29,6 @@ export const syncUser = mutation({
       return await ctx.db.insert("user", {
         clerkId: args.clerkId,
         email: args.email,
-        createdAt: now,
         updatedAt: now,
         isActive: args.isActive,
       });
