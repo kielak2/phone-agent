@@ -28,6 +28,15 @@ export const syncConversationsFromElevenLabs = action({
       if (existing.some((e: any) => e.conversationId === conv.conversationId)) { skippedCount++; continue; }
 
       const now = Date.now();
+
+      let externalNumber: string | undefined = undefined;
+      try {
+        const details = await client.conversationalAi.conversations.get(conv.conversationId);
+        externalNumber = details?.metadata?.phoneCall?.externalNumber;
+      } catch (_) {
+        console.error(`Error fetching conversation details for ${conv.conversationId}`);
+      }
+
       await ctx.runMutation(api.conversations.addConversation, {
         userId,
         conversationId: conv.conversationId,
@@ -36,6 +45,7 @@ export const syncConversationsFromElevenLabs = action({
         startTime: conv.startTimeUnixSecs,
         duration: conv.callDurationSecs,
         callSuccessful: (conv.callSuccessful ?? "unknown"),
+        customerPhoneNumber: externalNumber ?? "unknown",
         updatedAt: now,
       });
       savedCount++;

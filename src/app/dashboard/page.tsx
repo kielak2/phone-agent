@@ -8,82 +8,47 @@ import { CallDetailsDialog } from "./components/CallDetailsDialog"
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 
-// Mock data with more recent dates
-const callsData = [
-  {
-    id: "1",
-    phoneNumber: "+1-555-0123",
-    date: "2024-01-26",
-    time: "14:30",
-    duration: "5:23",
-    audioUrl: "/audio/call-1.mp3",
-    transcript:
-      "Hello, I'd like to place an order for two premium t-shirts in size large and one baseball cap in blue. Can you help me with that? I need them shipped to 123 Main Street in New York.",
-  },
-  {
-    id: "2",
-    phoneNumber: "+1-555-0124",
-    date: "2024-01-26",
-    time: "16:45",
-    duration: "3:12",
-    audioUrl: "/audio/call-2.mp3",
-    transcript:
-      "Hi, I was calling to ask about your return policy. I purchased something last week and I'm not sure if I can return it. Could you please explain the process?",
-  },
-  {
-    id: "3",
-    phoneNumber: "+1-555-0125",
-    date: "2024-01-25",
-    time: "11:20",
-    duration: "7:45",
-    audioUrl: "/audio/call-3.mp3",
-    transcript:
-      "I'd like to order the wireless headphones I saw on your website. They're the ones that cost $149.99. I also need a phone case to go with it. Can you process this order for me?",
-  },
-  {
-    id: "4",
-    phoneNumber: "+1-555-0123",
-    date: "2024-01-24",
-    time: "09:15",
-    duration: "2:30",
-    audioUrl: "/audio/call-4.mp3",
-    transcript:
-      "Good morning, I'm calling to check on the status of my order. I placed it a few days ago and haven't received any updates yet.",
-  },
-  {
-    id: "5",
-    phoneNumber: "+1-555-0124",
-    date: "2024-01-22",
-    time: "15:22",
-    duration: "4:18",
-    audioUrl: "/audio/call-5.mp3",
-    transcript:
-      "Hello, I need to update my shipping address for an order I just placed. Is it possible to change it before it ships out?",
-  },
-]
-
 export default function Dashboard() {
   const { user } = useUser()
   
-  // Get user data from Convex
   const convexUser = useQuery(api.user.getUserByClerkId, 
     user?.id ? { clerkId: user.id } : "skip"
   )
   
-  // Get user's phone numbers
   const phoneNumbers = useQuery(api.phoneNumber.getPhoneNumbersByUser,
     convexUser?._id ? { userId: convexUser._id } : "skip"
   )
+
+  const conversations = useQuery(api.conversations.getConversationsByUser,
+    convexUser?._id ? { userId: convexUser._id } : "skip"
+  ) as any[] | undefined
+
+  const rows = (conversations ?? [])
+    .sort((a, b) => b.startTime - a.startTime)
+    .map((c) => {
+      const dateObj = new Date((c.startTime ?? 0) * 1000)
+      const date = dateObj.toISOString().split('T')[0]
+      const time = dateObj.toTimeString().slice(0,5)
+      const duration = `${Math.floor((c.duration ?? 0) / 60)}:${String((c.duration ?? 0) % 60).padStart(2,'0')}`
+      return {
+        id: c._id as string,
+        conversationId: c.conversationId as string,
+        phoneNumber: c.customerPhoneNumber as string,
+        date,
+        time,
+        duration,
+      }
+    })
 
   const today = new Date().toISOString().split("T")[0]
   const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
 
   const stats = {
-    totalCalls: callsData.length,
-    callsToday: callsData.filter((call) => call.date === today).length,
-    callsLastWeek: callsData.filter((call) => call.date >= oneWeekAgo).length,
-    callsLast30Days: callsData.filter((call) => call.date >= thirtyDaysAgo).length,
+    totalCalls: rows.length,
+    callsToday: rows.filter((r) => r.date === today).length,
+    callsLastWeek: rows.filter((r) => r.date >= oneWeekAgo).length,
+    callsLast30Days: rows.filter((r) => r.date >= thirtyDaysAgo).length,
   }
 
   const getCallAge = (date: string) => {
@@ -179,7 +144,7 @@ export default function Dashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {callsData.map((call, index) => {
+                  {rows.map((call, index) => {
                     const callAge = getCallAge(call.date)
                     return (
                       <TableRow

@@ -12,6 +12,7 @@ export const addConversation = mutation({
     startTime: v.number(),
     duration: v.number(),
     callSuccessful: v.union(v.literal("success"), v.literal("failure"), v.literal("unknown")),
+    customerPhoneNumber: v.string(),
     updatedAt: v.number(),
   },
   handler: async (ctx, args) => {
@@ -23,6 +24,7 @@ export const addConversation = mutation({
       startTime: args.startTime,
       duration: args.duration,
       callSuccessful: args.callSuccessful,
+      customerPhoneNumber: args.customerPhoneNumber || "unknown",
       updatedAt: args.updatedAt,
     });
   },

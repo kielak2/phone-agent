@@ -27,6 +27,7 @@ export default defineSchema({
     startTime: v.number(),
     duration: v.number(),
     callSuccessful: v.union(v.literal("success"), v.literal("failure"), v.literal("unknown")),
+    customerPhoneNumber: v.string(),
     updatedAt: v.number(),
   })
     .index("by_user_id", ["userId"])
