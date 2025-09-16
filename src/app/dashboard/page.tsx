@@ -7,6 +7,13 @@ import { UserButton, useUser } from "@clerk/nextjs"
 import { CallDetailsDialog } from "./components/CallDetailsDialog"
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
+import type { ConversationModel } from "@/types/convex"
+import { 
+  conversationToCallItem, 
+  sortCallsByNewest, 
+  calculateCallStats, 
+  getCallAge 
+} from "./utils/transforms"
 
 export default function Dashboard() {
   const { user } = useUser()
@@ -21,45 +28,12 @@ export default function Dashboard() {
 
   const conversations = useQuery(api.conversations.getConversationsByUser,
     convexUser?._id ? { userId: convexUser._id } : "skip"
-  ) as any[] | undefined
+  ) as ConversationModel[] | undefined
 
-  const rows = (conversations ?? [])
-    .sort((a, b) => b.startTime - a.startTime)
-    .map((c) => {
-      const dateObj = new Date((c.startTime ?? 0) * 1000)
-      const date = dateObj.toISOString().split('T')[0]
-      const time = dateObj.toTimeString().slice(0,5)
-      const duration = `${Math.floor((c.duration ?? 0) / 60)}:${String((c.duration ?? 0) % 60).padStart(2,'0')}`
-      return {
-        id: c._id as string,
-        conversationId: c.conversationId as string,
-        phoneNumber: c.customerPhoneNumber as string,
-        date,
-        time,
-        duration,
-      }
-    })
-
-  const today = new Date().toISOString().split("T")[0]
-  const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
-
-  const stats = {
-    totalCalls: rows.length,
-    callsToday: rows.filter((r) => r.date === today).length,
-    callsLastWeek: rows.filter((r) => r.date >= oneWeekAgo).length,
-    callsLast30Days: rows.filter((r) => r.date >= thirtyDaysAgo).length,
-  }
-
-  const getCallAge = (date: string) => {
-    const callDate = new Date(date)
-    const now = new Date()
-    const diffDays = Math.ceil(Math.abs(now.getTime() - callDate.getTime()) / (1000 * 60 * 60 * 24))
-    if (diffDays === 1) return "today"
-    if (diffDays <= 7) return "week"
-    if (diffDays <= 30) return "month"
-    return "old"
-  }
+  // Transform Convex data to UI format using our clean transform layer
+  const callItems = conversations ? conversations.map(conversationToCallItem) : []
+  const rows = sortCallsByNewest(callItems)
+  const stats = calculateCallStats(rows)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">

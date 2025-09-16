@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react"
 import { Play, Pause, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
   DialogContent,
@@ -12,65 +11,62 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import type { CallData } from "../types"
+import type { CallListItem, TranscriptItem } from "@/types/ui"
+import { parseDurationToSeconds, formatDurationFromSeconds } from "../utils/transforms"
+import { Transcript } from "./Transcript"
+import { tryCatch } from "@/lib/tryCatch"
 
 interface CallDetailsDialogProps {
-  call: CallData
+  call: CallListItem
 }
 
-function formatTime(seconds: number): string {
-  if (!isFinite(seconds) || seconds < 0) return "0:00"
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m}:${String(s).padStart(2, "0")}`
-}
-
-function parseDurationToSeconds(duration: string): number {
-  // duration format "M:SS" or "MM:SS"
-  const [m, s] = duration.split(":").map((n) => parseInt(n, 10))
-  if (Number.isFinite(m) && Number.isFinite(s)) return m * 60 + s
-  return 0
-}
+// Use formatDurationFromSeconds from transforms instead of local formatTime
 
 export function CallDetailsDialog({ call }: CallDetailsDialogProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [open, setOpen] = useState(false)
-  const [transcript, setTranscript] = useState<string>("")
+  const [transcript, setTranscript] = useState<TranscriptItem[]>([])
   const [loading, setLoading] = useState(false)
+  const [transcriptOpen, setTranscriptOpen] = useState(false)
+  const [transcriptLoaded, setTranscriptLoaded] = useState(false)
   const [audioReady, setAudioReady] = useState(false)
   const [audioError, setAudioError] = useState<string | null>(null)
   const [currentTime, setCurrentTime] = useState(0)
   const [totalDuration, setTotalDuration] = useState(() => parseDurationToSeconds(call.duration))
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  // Load transcript on open
-  useEffect(() => { 
+  // Lazy-load transcript when section is opened
+  useEffect(() => {
     if (!open) return
+    if (!transcriptOpen) return
+    if (transcriptLoaded) return
     let cancelled = false
     const run = async () => {
       setLoading(true)
-      try {
-        const res = await fetch(`/api/conversations/${encodeURIComponent(call.conversationId)}`)
-        if (res.ok) {
-          const data = await res.json()
-          const text = Array.isArray(data.transcript)
-            ? data.transcript
-                .map((t: any) => `${t.role === "agent" ? "Agent" : "User"}: ${t.message ?? ""}`)
-                .join("\n")
-            : ""
-          if (!cancelled) setTranscript(text)
-        } else {
-          if (!cancelled) setTranscript("Failed to load transcript")
-        }
-      } catch {
-        if (!cancelled) setTranscript("Failed to load transcript")
-      } finally {
+      const { data: res } = await tryCatch(fetch(`/api/conversations/${encodeURIComponent(call.conversationId)}`))
+      if (!res) {
+        if (!cancelled) setTranscript([])
         if (!cancelled) setLoading(false)
+        return
       }
+      if (!res.ok) {
+        if (!cancelled) setTranscript([])
+        if (!cancelled) setLoading(false)
+        return
+      }
+      const { data: body } = await tryCatch(res.json() as Promise<any>)
+      const items: TranscriptItem[] = Array.isArray(body?.transcript)
+        ? body.transcript
+            .filter((t: any) => t && (t.role === "agent" || t.role === "user") && typeof t.message === "string" && t.message.trim().length > 0)
+            .map((t: any) => ({ role: t.role, message: t.message.trim() }))
+        : []
+      if (!cancelled) setTranscript(items)
+      if (!cancelled) setTranscriptLoaded(true)
+      if (!cancelled) setLoading(false)
     }
     run()
     return () => { cancelled = true }
-  }, [open, call.conversationId])
+  }, [open, transcriptOpen, transcriptLoaded, call.conversationId])
 
   // Point audio element to streaming endpoint when opened
   useEffect(() => {
@@ -92,23 +88,23 @@ export function CallDetailsDialog({ call }: CallDetailsDialogProps) {
       audioRef.current.pause()
       setIsPlaying(false)
     } else {
-      try {
-        if (!audioReady) {
-          await new Promise<void>((resolve) => {
-            const onCanPlay = () => { audioRef.current?.removeEventListener("canplay", onCanPlay); resolve() }
-            audioRef.current?.addEventListener("canplay", onCanPlay)
-          })
-        }
-        await audioRef.current.play()
-        setIsPlaying(true)
-      } catch {
-        setAudioError("Playback failed")
+      if (!audioReady) {
+        await new Promise<void>((resolve) => {
+          const onCanPlay = () => { audioRef.current?.removeEventListener("canplay", onCanPlay); resolve() }
+          audioRef.current?.addEventListener("canplay", onCanPlay)
+        })
       }
+      const { error } = await tryCatch(audioRef.current.play())
+      if (error) {
+        setAudioError("Playback failed")
+        return
+      }
+      setIsPlaying(true)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v && audioRef.current) { audioRef.current.pause(); setIsPlaying(false) } }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v && audioRef.current) { audioRef.current.pause(); setIsPlaying(false) } if (!v) { setTranscriptOpen(false); setTranscriptLoaded(false); setTranscript([]) } }}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="border border-slate-300 bg-white text-slate-800 transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-800">
           View Details
@@ -151,7 +147,7 @@ export function CallDetailsDialog({ call }: CallDetailsDialogProps) {
                   </Button>
                 </a>
                 <span className="font-mono text-sm text-slate-700">
-                  {formatTime(currentTime)} / {Number.isFinite(totalDuration) && totalDuration > 0 ? formatTime(totalDuration) : call.duration}
+                  {formatDurationFromSeconds(currentTime)} / {Number.isFinite(totalDuration) && totalDuration > 0 ? formatDurationFromSeconds(totalDuration) : call.duration}
                 </span>
               </div>
               {audioError && <div className="mt-2 text-sm text-red-600">{audioError}</div>}
@@ -177,23 +173,12 @@ export function CallDetailsDialog({ call }: CallDetailsDialogProps) {
           </Card>
 
           {/* Transcript */}
-          <Card className="border border-slate-200 bg-slate-50/50 shadow-md">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-slate-900">
-                <div className="rounded-lg border border-slate-200 bg-white p-2">
-                  <div className="h-5 w-5 rounded-full bg-teal-600" />
-                </div>
-                AI Transcript
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                value={loading ? "Loading transcript..." : transcript}
-                readOnly
-                className="min-h-[150px] resize-none bg-white text-slate-900 focus:ring-2 focus:ring-teal-500"
-              />
-            </CardContent>
-          </Card>
+          <Transcript
+            loading={loading}
+            items={transcript}
+            isOpen={transcriptOpen}
+            onToggle={() => setTranscriptOpen((p) => !p)}
+          />
         </div>
       </DialogContent>
     </Dialog>
