@@ -1,6 +1,6 @@
 // Transformation layer between Convex data and UI components
 import type { ConversationModel } from "@/types/convex"
-import type { CallListItem, CallStats, CallAge } from "@/types/ui"
+import type { CallListItem } from "@/types/ui"
 
 /**
  * Transform a Convex conversation record into a UI call list item
@@ -8,6 +8,13 @@ import type { CallListItem, CallStats, CallAge } from "@/types/ui"
 export function conversationToCallItem(conversation: ConversationModel): CallListItem {
   const dateObj = new Date(conversation.startTime * 1000)
   const durationSeconds = conversation.duration
+  
+  // Map callSuccessful to evaluation result
+  const evaluationResult = conversation.callSuccessful === "success" ? "Successful" : 
+                          conversation.callSuccessful === "failure" ? "Failed" : "Unknown"
+  
+  // Estimate messages based on duration (rough estimate: 1 message per 15 seconds)
+  const estimatedMessages = Math.max(1, Math.floor(durationSeconds / 15))
   
   return {
     id: conversation._id,
@@ -17,6 +24,8 @@ export function conversationToCallItem(conversation: ConversationModel): CallLis
     time: dateObj.toTimeString().slice(0, 5),
     duration: `${Math.floor(durationSeconds / 60)}:${String(durationSeconds % 60).padStart(2, '0')}`,
     formattedDuration: durationSeconds,
+    messages: estimatedMessages,
+    evaluationResult: evaluationResult as "Successful" | "Failed" | "Unknown",
   }
 }
 
@@ -31,35 +40,7 @@ export function sortCallsByNewest(calls: CallListItem[]): CallListItem[] {
   })
 }
 
-/**
- * Calculate call statistics from call list
- */
-export function calculateCallStats(calls: CallListItem[]): CallStats {
-  const today = new Date().toISOString().split("T")[0]
-  const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
-
-  return {
-    totalCalls: calls.length,
-    callsToday: calls.filter((call) => call.date === today).length,
-    callsLastWeek: calls.filter((call) => call.date >= oneWeekAgo).length,
-    callsLast30Days: calls.filter((call) => call.date >= thirtyDaysAgo).length,
-  }
-}
-
-/**
- * Determine the age category of a call
- */
-export function getCallAge(date: string): CallAge {
-  const callDate = new Date(date)
-  const now = new Date()
-  const diffDays = Math.ceil(Math.abs(now.getTime() - callDate.getTime()) / (1000 * 60 * 60 * 24))
-  
-  if (diffDays === 1) return "today"
-  if (diffDays <= 7) return "week"
-  if (diffDays <= 30) return "month"
-  return "old"
-}
+// removed call statistics and age helpers as part of UI simplification
 
 /**
  * Parse duration string (MM:SS) to seconds
@@ -80,4 +61,27 @@ export function formatDurationFromSeconds(seconds: number): string {
   const minutes = Math.floor(seconds / 60)
   const remainingSeconds = Math.floor(seconds % 60)
   return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`
+}
+
+/**
+ * Filter calls by date range
+ */
+export function filterCallsByDateRange(
+  calls: CallListItem[], 
+  dateAfter?: string, 
+  dateBefore?: string
+): CallListItem[] {
+  return calls.filter(call => {
+    const callDate = call.date
+    
+    if (dateAfter && callDate < dateAfter) {
+      return false
+    }
+    
+    if (dateBefore && callDate > dateBefore) {
+      return false
+    }
+    
+    return true
+  })
 }

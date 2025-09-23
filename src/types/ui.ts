@@ -8,16 +8,11 @@ export interface CallListItem {
   time: string
   duration: string
   formattedDuration: number // duration in seconds for calculations
+  messages: number
+  evaluationResult: "Successful" | "Failed" | "Unknown"
 }
 
-export interface CallStats {
-  totalCalls: number
-  callsToday: number
-  callsLastWeek: number
-  callsLast30Days: number
-}
-
-export type CallAge = "today" | "week" | "month" | "old"
+// Removed CallStats and CallAge as part of UI simplification
 
 
 export type TranscriptItem = {

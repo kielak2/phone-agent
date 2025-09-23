@@ -18,13 +18,18 @@ import { tryCatch } from "@/lib/tryCatch"
 
 interface CallDetailsDialogProps {
   call: CallListItem
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  hideTrigger?: boolean
 }
 
 // Use formatDurationFromSeconds from transforms instead of local formatTime
 
-export function CallDetailsDialog({ call }: CallDetailsDialogProps) {
+export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrigger }: CallDetailsDialogProps) {
   const [isPlaying, setIsPlaying] = useState(false)
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = openProp ?? internalOpen
+  const setOpen = onOpenChange ?? setInternalOpen
   const [transcript, setTranscript] = useState<TranscriptItem[]>([])
   const [loading, setLoading] = useState(false)
   const [transcriptOpen, setTranscriptOpen] = useState(false)
@@ -105,11 +110,13 @@ export function CallDetailsDialog({ call }: CallDetailsDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v && audioRef.current) { audioRef.current.pause(); setIsPlaying(false) } if (!v) { setTranscriptOpen(false); setTranscriptLoaded(false); setTranscript([]) } }}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="border border-slate-300 bg-white text-slate-800 transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-800">
-          View Details
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm" className="border border-slate-300 bg-white text-slate-800 transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-800">
+            View Details
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-4xl max-h={80}vh overflow-y-auto border border-slate-200 bg-white shadow-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-slate-900">Call Details</DialogTitle>
