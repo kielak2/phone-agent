@@ -12,6 +12,7 @@ import {
   conversationToCallItem,
   sortCallsByNewest,
   filterCallsByDateRange,
+  formatPhoneNumber,
 } from "./utils/transforms"
 import { DateFilterChip } from "./components/DateFilterChip"
 import { CallDetailsDialog } from "./components/CallDetailsDialog"
@@ -76,7 +77,7 @@ export default function Dashboard() {
 					<PhoneCall className="h-4 w-4 text-teal-700" />
 					<span className="text-sm">Active Phone Number</span>
 					<span className="font-mono text-sm rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-teal-700">
-						{phoneNumbers && phoneNumbers.length > 0 ? phoneNumbers[0].phoneNumber : "+1-555-AI-PHONE"}
+						{phoneNumbers && phoneNumbers.length > 0 ? formatPhoneNumber(phoneNumbers[0].phoneNumber) : "+48 XXX XXX XXX"}
 					</span>
 				</div>
 			</div>
@@ -85,10 +86,10 @@ export default function Dashboard() {
                 <TableHeader>
                   <TableRow className="border-b border-gray-200 hover:bg-transparent cursor-default">
                     <TableHead className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
+                      Dates
                     </TableHead>
                     <TableHead className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Duration
+                      Durations
                     </TableHead>
                     <TableHead className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Messages

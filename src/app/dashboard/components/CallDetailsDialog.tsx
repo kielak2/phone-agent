@@ -1,16 +1,10 @@
 "use client"
 import { useEffect, useRef, useState } from "react"
-import { Play, Pause, Download } from "lucide-react"
+import * as DialogPrimitive from "@radix-ui/react-dialog"
+import { Play, Pause, Download, X, Volume2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { CallListItem, TranscriptItem } from "@/types/ui"
 import { parseDurationToSeconds, formatDurationFromSeconds } from "../utils/transforms"
 import { Transcript } from "./Transcript"
@@ -39,11 +33,14 @@ export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrig
   const [currentTime, setCurrentTime] = useState(0)
   const [totalDuration, setTotalDuration] = useState(() => parseDurationToSeconds(call.duration))
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [playbackRate, setPlaybackRate] = useState<number>(1)
+  const [volume, setVolume] = useState<number>(1)
+  const [isDragging, setIsDragging] = useState(false)
+  const [hoverTime, setHoverTime] = useState<number | null>(null)
 
-  // Lazy-load transcript when section is opened
+  // Load transcript as soon as the sheet opens
   useEffect(() => {
     if (!open) return
-    if (!transcriptOpen) return
     if (transcriptLoaded) return
     let cancelled = false
     const run = async () => {
@@ -71,7 +68,7 @@ export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrig
     }
     run()
     return () => { cancelled = true }
-  }, [open, transcriptOpen, transcriptLoaded, call.conversationId])
+  }, [open, transcriptLoaded, call.conversationId])
 
   // Point audio element to streaming endpoint when opened
   useEffect(() => {
@@ -84,8 +81,24 @@ export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrig
     const url = `/api/conversations/${encodeURIComponent(call.conversationId)}/audio`
     audioRef.current.src = url
     audioRef.current.load()
+    audioRef.current.playbackRate = playbackRate
+    audioRef.current.volume = volume
     setIsPlaying(false)
   }, [open, call.conversationId, call.duration])
+
+  // Apply playback rate changes
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackRate
+    }
+  }, [playbackRate])
+
+  // Apply volume changes
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume
+    }
+  }, [volume])
 
   const togglePlay = async () => {
     if (!audioRef.current) return
@@ -108,59 +121,133 @@ export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrig
     }
   }
 
+  // no custom seek buttons; native timeline is shown below
+
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v && audioRef.current) { audioRef.current.pause(); setIsPlaying(false) } if (!v) { setTranscriptOpen(false); setTranscriptLoaded(false); setTranscript([]) } }}>
+    <DialogPrimitive.Root open={open} onOpenChange={(v) => { setOpen(v); if (!v && audioRef.current) { audioRef.current.pause(); setIsPlaying(false) } if (!v) { setTranscriptOpen(false); setTranscriptLoaded(false); setTranscript([]) } }}>
       {!hideTrigger && (
-        <DialogTrigger asChild>
+        <DialogPrimitive.Trigger asChild>
           <Button variant="outline" size="sm" className="border border-slate-300 bg-white text-slate-800 transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-800">
             View Details
           </Button>
-        </DialogTrigger>
+        </DialogPrimitive.Trigger>
       )}
-      <DialogContent className="max-w-4xl max-h={80}vh overflow-y-auto border border-slate-200 bg-white shadow-2xl">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-slate-900">Call Details</DialogTitle>
-          <DialogDescription className="text-base font-medium text-slate-600">
-            {call.phoneNumber} • {call.date} at {call.time} • Duration: {call.duration}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 duration-400 fixed inset-0 z-40 bg-black/40" />
+        <DialogPrimitive.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right data-[state=open]:duration-400 data-[state=closed]:duration-200 data-[state=open]:ease-out data-[state=closed]:ease-in fixed inset-y-0 right-0 z-50 flex h-screen w-full min-w-0 flex-col overflow-hidden border-l border-slate-200 bg-white p-6 shadow-2xl focus:outline-none sm:w-full md:w-2/3 lg:w-1/2 xl:w-5/12">
+          <div className="-mx-6 sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+            <div className="flex items-center justify-between">
+              <DialogPrimitive.Title className="text-xl font-semibold text-slate-900">Call details</DialogPrimitive.Title>
+              <DialogPrimitive.Close
+                onClick={() => setOpen(false)}
+                className="rounded-xs p-1 text-slate-500 transition-colors hover:text-slate-700 focus:outline-none"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </DialogPrimitive.Close>
+            </div>
+            <p className="mt-1 text-sm font-medium text-slate-600">
+              {call.phoneNumber} • {call.date} at {call.time} • Duration: {call.duration}
+            </p>
+          </div>
 
-        <div className="mt-6 grid gap-6">
+          <div className="mt-4 flex flex-1 min-h-0 flex-col gap-6">
           {/* Audio Player */}
-          <Card className="border border-teal-200 bg-teal-50/50 shadow-md">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-slate-900">
-                <div className="rounded-lg border border-teal-200 bg-teal-50 p-2">
-                  <Play className="h-5 w-5 text-teal-700" />
+          <Card className="border border-slate-200 bg-white shadow-sm">
+            <CardContent className="p-4">
+              {/* Timeline above controls - Simple & Elegant */}
+              <div className="group">
+                <div className="relative flex items-center">
+                  {/* Background track */}
+                  <div className="absolute h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                    {/* Progress fill */}
+                    <div
+                      className="h-full rounded-full bg-emerald-500 transition-all"
+                      style={{
+                        width: `${((currentTime / (Number.isFinite(totalDuration) && totalDuration > 0 ? totalDuration : 1)) * 100)}%`
+                      }}
+                    />
+                  </div>
+                  {/* Input slider */}
+                  <input
+                    type="range"
+                    min={0}
+                    max={Number.isFinite(totalDuration) && totalDuration > 0 ? totalDuration : 0}
+                    step={0.1}
+                    value={Math.min(currentTime, Number.isFinite(totalDuration) && totalDuration > 0 ? totalDuration : 0)}
+                    onChange={(e) => {
+                      const v = Number(e.currentTarget.value)
+                      if (audioRef.current && Number.isFinite(v)) {
+                        audioRef.current.currentTime = v
+                        setCurrentTime(v)
+                      }
+                    }}
+                    className="relative z-10 w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:ring-2 [&::-webkit-slider-thumb]:ring-emerald-500 [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-110 [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:shadow-lg [&::-moz-range-thumb]:ring-2 [&::-moz-range-thumb]:ring-emerald-500 [&::-moz-range-thumb]:transition-transform [&::-moz-range-thumb]:hover:scale-110"
+                    aria-label="Seek"
+                  />
                 </div>
-                Call Recording
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={togglePlay}
-                  className="border border-teal-300 bg-white text-teal-700 transition-colors hover:border-teal-500 hover:bg-teal-600 hover:text-white"
-                >
-                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  <span className="ml-2">{isPlaying ? "Pause" : "Play"}</span>
-                </Button>
-                <a href={`/api/conversations/${encodeURIComponent(call.conversationId)}/audio`} download>
-                  <Button variant="outline" size="sm" className="border border-slate-300 bg-white text-slate-800 transition-colors hover:border-slate-400 hover:bg-slate-100">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download
-                  </Button>
-                </a>
-                <span className="font-mono text-sm text-slate-700">
-                  {formatDurationFromSeconds(currentTime)} / {Number.isFinite(totalDuration) && totalDuration > 0 ? formatDurationFromSeconds(totalDuration) : call.duration}
-                </span>
+                <div className="mt-2.5 flex items-center justify-between text-xs text-slate-600">
+                  <span>{formatDurationFromSeconds(currentTime)}</span>
+                  <span>{Number.isFinite(totalDuration) && totalDuration > 0 ? formatDurationFromSeconds(totalDuration) : call.duration}</span>
+                </div>
               </div>
-              {audioError && <div className="mt-2 text-sm text-red-600">{audioError}</div>}
+
+              {/* Controls row */}
+              <div className="mt-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={togglePlay}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-white transition-transform active:scale-95"
+                    aria-label={isPlaying ? "Pause" : "Play"}
+                  >
+                    {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                  </button>
+
+                  <div className="ml-1 flex items-center gap-2">
+                    <Volume2 className="h-4 w-4 text-slate-600" />
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      value={volume}
+                      onChange={(e) => setVolume(parseFloat(e.currentTarget.value))}
+                      className="h-2 w-28 cursor-pointer appearance-none rounded-full bg-slate-200 accent-emerald-600 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-emerald-600"
+                      aria-label="Volume"
+                    />
+                  </div>
+
+                  <Select value={String(playbackRate)} onValueChange={(v) => setPlaybackRate(parseFloat(v))}>
+                    <SelectTrigger className="h-8 w-[88px] border-slate-300 text-xs text-slate-700">
+                      <SelectValue placeholder="Speed" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0.75">0.75x</SelectItem>
+                      <SelectItem value="1">1x</SelectItem>
+                      <SelectItem value="1.25">1.25x</SelectItem>
+                      <SelectItem value="1.5">1.5x</SelectItem>
+                      <SelectItem value="2">2x</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <a href={`/api/conversations/${encodeURIComponent(call.conversationId)}/audio`} download>
+                    <Button variant="outline" size="sm" className="border-slate-300 text-slate-800 hover:border-slate-400 hover:bg-slate-100">
+                      <Download className="mr-2 h-4 w-4" />
+                      Download
+                    </Button>
+                  </a>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-sm text-slate-700">
+                    {formatDurationFromSeconds(currentTime)} / {Number.isFinite(totalDuration) && totalDuration > 0 ? formatDurationFromSeconds(totalDuration) : call.duration}
+                  </span>
+                </div>
+              </div>
+
+              {/* Hidden native element */}
               <audio
                 ref={audioRef}
-                controls
                 preload="metadata"
                 onCanPlay={() => setAudioReady(true)}
                 onLoadedMetadata={() => {
@@ -172,22 +259,26 @@ export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrig
                 onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime ?? 0)}
                 onEnded={() => { setIsPlaying(false); setCurrentTime(0) }}
                 onError={() => setAudioError("Audio failed to load")}
-                className="mt-3 w-full"
+                className="hidden"
               >
                 <source src={`/api/conversations/${encodeURIComponent(call.conversationId)}/audio`} type="audio/mpeg" />
               </audio>
+              {audioError && <div className="mt-2 text-sm text-red-600">{audioError}</div>}
             </CardContent>
           </Card>
 
-          {/* Transcript */}
-          <Transcript
-            loading={loading}
-            items={transcript}
-            isOpen={transcriptOpen}
-            onToggle={() => setTranscriptOpen((p) => !p)}
-          />
-        </div>
-      </DialogContent>
-    </Dialog>
+          {/* Transcript section (fills remaining height; its own scroll) */}
+          <div className="flex-1 min-h-0">
+            <div className="mb-2 text-sm font-semibold text-slate-700">Transcription</div>
+            <Transcript
+              loading={loading}
+              items={transcript}
+              className="h-full"
+            />
+          </div>
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   )
 }

@@ -1,6 +1,6 @@
 // Transformation layer between Convex data and UI components
 import type { ConversationModel } from "@/types/convex"
-import type { CallListItem } from "@/types/ui"
+  import type { CallListItem } from "@/types/ui"
 
 /**
  * Transform a Convex conversation record into a UI call list item
@@ -84,4 +84,25 @@ export function filterCallsByDateRange(
     
     return true
   })
+}
+
+/**
+ * Format phone number in Polish format: +48 XXX XXX XXX
+ */
+export function formatPhoneNumber(phone: string): string {
+  // Remove all non-digit characters
+  const digits = phone.replace(/\D/g, '')
+  
+  // If starts with 48, format as +48 XXX XXX XXX
+  if (digits.startsWith('48') && digits.length >= 11) {
+    return `+48 ${digits.slice(2, 5)} ${digits.slice(5, 8)} ${digits.slice(8, 11)}`
+  }
+  
+  // If 9 digits (local Polish number), add +48 prefix
+  if (digits.length === 9) {
+    return `+48 ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 9)}`
+  }
+  
+  // Otherwise return original
+  return phone
 }
