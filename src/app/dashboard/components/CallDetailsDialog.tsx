@@ -17,8 +17,6 @@ interface CallDetailsDialogProps {
   hideTrigger?: boolean
 }
 
-// Use formatDurationFromSeconds from transforms instead of local formatTime
-
 export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrigger }: CallDetailsDialogProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [internalOpen, setInternalOpen] = useState(false)
@@ -26,34 +24,25 @@ export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrig
   const setOpen = onOpenChange ?? setInternalOpen
   const [transcript, setTranscript] = useState<TranscriptItem[]>([])
   const [loading, setLoading] = useState(false)
-  const [transcriptOpen, setTranscriptOpen] = useState(false)
-  const [transcriptLoaded, setTranscriptLoaded] = useState(false)
-  const [audioReady, setAudioReady] = useState(false)
   const [audioError, setAudioError] = useState<string | null>(null)
   const [currentTime, setCurrentTime] = useState(0)
   const [totalDuration, setTotalDuration] = useState(() => parseDurationToSeconds(call.duration))
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [playbackRate, setPlaybackRate] = useState<number>(1)
   const [volume, setVolume] = useState<number>(1)
-  const [isDragging, setIsDragging] = useState(false)
-  const [hoverTime, setHoverTime] = useState<number | null>(null)
 
-  // Load transcript as soon as the sheet opens
+  // Load transcript when dialog opens or conversation changes
   useEffect(() => {
     if (!open) return
-    if (transcriptLoaded) return
     let cancelled = false
     const run = async () => {
       setLoading(true)
       const { data: res } = await tryCatch(fetch(`/api/conversations/${encodeURIComponent(call.conversationId)}`))
-      if (!res) {
-        if (!cancelled) setTranscript([])
-        if (!cancelled) setLoading(false)
-        return
-      }
-      if (!res.ok) {
-        if (!cancelled) setTranscript([])
-        if (!cancelled) setLoading(false)
+      if (!res || !res.ok) {
+        if (!cancelled) {
+          setTranscript([])
+          setLoading(false)
+        }
         return
       }
       const { data: body } = await tryCatch(res.json() as Promise<any>)
@@ -62,17 +51,17 @@ export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrig
             .filter((t: any) => t && (t.role === "agent" || t.role === "user") && typeof t.message === "string" && t.message.trim().length > 0)
             .map((t: any) => ({ role: t.role, message: t.message.trim() }))
         : []
-      if (!cancelled) setTranscript(items)
-      if (!cancelled) setTranscriptLoaded(true)
-      if (!cancelled) setLoading(false)
+      if (!cancelled) {
+        setTranscript(items)
+        setLoading(false)
+      }
     }
     run()
     return () => { cancelled = true }
-  }, [open, transcriptLoaded, call.conversationId])
+  }, [open, call.conversationId])
 
   // Point audio element to streaming endpoint when opened
   useEffect(() => {
-    setAudioReady(false)
     setAudioError(null)
     setCurrentTime(0)
     setTotalDuration(parseDurationToSeconds(call.duration))
@@ -81,24 +70,15 @@ export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrig
     const url = `/api/conversations/${encodeURIComponent(call.conversationId)}/audio`
     audioRef.current.src = url
     audioRef.current.load()
-    audioRef.current.playbackRate = playbackRate
-    audioRef.current.volume = volume
     setIsPlaying(false)
   }, [open, call.conversationId, call.duration])
 
-  // Apply playback rate changes
+  // Apply playback rate and volume changes
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.playbackRate = playbackRate
-    }
-  }, [playbackRate])
-
-  // Apply volume changes
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume
-    }
-  }, [volume])
+    if (!audioRef.current) return
+    audioRef.current.playbackRate = playbackRate
+    audioRef.current.volume = volume
+  }, [playbackRate, volume])
 
   const togglePlay = async () => {
     if (!audioRef.current) return
@@ -106,7 +86,8 @@ export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrig
       audioRef.current.pause()
       setIsPlaying(false)
     } else {
-      if (!audioReady) {
+      // Wait until the audio element has enough data to start playing smoothly
+      if ((audioRef.current.readyState ?? 0) < 2) {
         await new Promise<void>((resolve) => {
           const onCanPlay = () => { audioRef.current?.removeEventListener("canplay", onCanPlay); resolve() }
           audioRef.current?.addEventListener("canplay", onCanPlay)
@@ -121,10 +102,19 @@ export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrig
     }
   }
 
-  // no custom seek buttons; native timeline is shown below
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen)
+    if (!nextOpen) {
+      if (audioRef.current) {
+        audioRef.current.pause()
+      }
+      setIsPlaying(false)
+      setTranscript([])
+    }
+  }
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={(v) => { setOpen(v); if (!v && audioRef.current) { audioRef.current.pause(); setIsPlaying(false) } if (!v) { setTranscriptOpen(false); setTranscriptLoaded(false); setTranscript([]) } }}>
+    <DialogPrimitive.Root open={open} onOpenChange={handleOpenChange}>
       {!hideTrigger && (
         <DialogPrimitive.Trigger asChild>
           <Button variant="outline" size="sm" className="border border-slate-300 bg-white text-slate-800 transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-800">
@@ -146,9 +136,21 @@ export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrig
                 <X className="h-5 w-5" />
               </DialogPrimitive.Close>
             </div>
-            <p className="mt-1 text-sm font-medium text-slate-600">
-              {call.phoneNumber} • {call.date} at {call.time} • Duration: {call.duration}
-            </p>
+            <div className="mt-3 grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Phone Number</p>
+                <p className="mt-1 text-sm font-semibold text-slate-900">{call.phoneNumber}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Date & Time</p>
+                <p className="mt-1 text-sm font-semibold text-slate-900">{call.date}</p>
+                <p className="text-xs text-slate-600">{call.time}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Duration</p>
+                <p className="mt-1 text-sm font-semibold text-slate-900">{call.duration}</p>
+              </div>
+            </div>
           </div>
 
           <div className="mt-4 flex flex-1 min-h-0 flex-col gap-6">
@@ -218,7 +220,7 @@ export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrig
                   </div>
 
                   <Select value={String(playbackRate)} onValueChange={(v) => setPlaybackRate(parseFloat(v))}>
-                    <SelectTrigger className="h-8 w-[88px] border-slate-300 text-xs text-slate-700">
+                    <SelectTrigger className="h-8 w-[70px] border-slate-300 text-xs text-slate-700">
                       <SelectValue placeholder="Speed" />
                     </SelectTrigger>
                     <SelectContent>
@@ -249,7 +251,6 @@ export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrig
               <audio
                 ref={audioRef}
                 preload="metadata"
-                onCanPlay={() => setAudioReady(true)}
                 onLoadedMetadata={() => {
                   const d = audioRef.current?.duration
                   if (typeof d === "number" && isFinite(d) && d > 0) {
@@ -268,8 +269,8 @@ export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrig
           </Card>
 
           {/* Transcript section (fills remaining height; its own scroll) */}
-          <div className="flex-1 min-h-0">
-            <div className="mb-2 text-sm font-semibold text-slate-700">Transcription</div>
+          <div className="flex-1 min-h-0 pt-6 border-t border-slate-200">
+            <div className="mb-4 text-base font-semibold text-slate-800">Transcription</div>
             <Transcript
               loading={loading}
               items={transcript}

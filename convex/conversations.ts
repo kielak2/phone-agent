@@ -1,4 +1,5 @@
 import { mutation, query } from "./_generated/server";
+import { paginationOptsValidator } from "convex/server";
 import { api } from "./_generated/api";
 import { v } from "convex/values";
 
@@ -38,6 +39,21 @@ export const getConversationsByUser = query({
       .query("conversation")
       .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
       .collect();
+  },
+});
+
+export const getConversationsByUserPaginated = query({
+  args: {
+    userId: v.id("user"),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    const { page, isDone, continueCursor } = await ctx.db
+      .query("conversation")
+      .withIndex("by_user_id_start_time", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .paginate(args.paginationOpts);
+    return { page, isDone, continueCursor };
   },
 });
 

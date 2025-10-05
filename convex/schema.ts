@@ -31,6 +31,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_user_id", ["userId"])
+    .index("by_user_id_start_time", ["userId", "startTime"]) 
     .index("by_conversation_id", ["conversationId"])
     .index("by_call_successful", ["callSuccessful"])
     .index("by_start_time", ["startTime"])

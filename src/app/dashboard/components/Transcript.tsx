@@ -9,7 +9,7 @@ type TranscriptProps = {
 
 export function Transcript({ items, loading = false, className = "" }: TranscriptProps) {
   return (
-    <div className={`space-y-6 h-full overflow-y-auto pr-2 ${className}`}>
+    <div className={`space-y-6 h-full overflow-y-auto pr-2 pb-10 ${className}`}>
       {loading ? (
         <div className="space-y-3">
           <div className="h-6 w-2/5 animate-pulse rounded-md bg-slate-200" />
@@ -33,11 +33,15 @@ export function Transcript({ items, loading = false, className = "" }: Transcrip
                   <div className={`mb-1 text-xs font-semibold ${isUser ? "text-slate-500" : "text-slate-500"}`}>
                       {isUser ? "Customer" : "Agent"}
                     </div>
-                    <div className="whitespace-pre-wrap leading-relaxed">{item.message.trim()}</div>
+                    <div className="whitespace-pre-wrap leading-relaxed text-[15px]">{item.message.trim()}</div>
                   </div>
                 </div>
               )
             })}
+          {/* End of call notice */}
+          <div className="flex justify-center">
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600">Phone call ended</span>
+          </div>
         </div>
       )}
     </div>

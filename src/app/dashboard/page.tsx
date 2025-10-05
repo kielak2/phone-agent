@@ -1,11 +1,12 @@
 'use client'
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { PhoneCall } from "lucide-react"
 /* removed card wrappers for minimal layout */
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { UserButton, useUser } from "@clerk/nextjs"
-import { useQuery } from "convex/react"
+import { usePaginatedQuery, useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import type { ConversationModel } from "@/types/convex"
 import {
@@ -21,6 +22,7 @@ export default function Dashboard() {
   const { user } = useUser()
   const [dateAfter, setDateAfter] = useState<string>("")
   const [dateBefore, setDateBefore] = useState<string>("")
+  // no client-side pages; we'll load more from server
   
   const convexUser = useQuery(api.user.getUserByClerkId, 
     user?.id ? { clerkId: user.id } : "skip"
@@ -30,14 +32,22 @@ export default function Dashboard() {
     convexUser?._id ? { userId: convexUser._id } : "skip"
   )
 
-  const conversations = useQuery(api.conversations.getConversationsByUser,
-    convexUser?._id ? { userId: convexUser._id } : "skip"
-  ) as ConversationModel[] | undefined
+  const { results: conversationsPage, status: conversationsStatus, loadMore } = usePaginatedQuery(
+    (api.conversations as any).getConversationsByUserPaginated as any,
+    (convexUser?._id ? ({ userId: convexUser._id, paginationOpts: { cursor: null, numItems: 20 } } as any) : ("skip" as any)),
+    { initialNumItems: 20 }
+  ) as any
 
   // Transform Convex data to UI format using our clean transform layer
-  const callItems = conversations ? conversations.map(conversationToCallItem) : []
+  const callItems = (conversationsPage as ConversationModel[] | undefined)
+    ? (conversationsPage as ConversationModel[]).map(conversationToCallItem)
+    : []
   const sortedCalls = sortCallsByNewest(callItems)
   const filteredCalls = filterCallsByDateRange(sortedCalls, dateAfter, dateBefore)
+
+  useEffect(() => {
+    // When filters change, we keep already loaded results and filter client-side.
+  }, [dateAfter, dateBefore])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -89,10 +99,10 @@ export default function Dashboard() {
                       Dates
                     </TableHead>
                     <TableHead className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Durations
+                      Customer phone
                     </TableHead>
                     <TableHead className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Messages
+                      Durations
                     </TableHead>
                     <TableHead className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Evaluation result
@@ -106,6 +116,17 @@ export default function Dashboard() {
                 </TableBody>
               </Table>
 			</div>
+            {/* Load more */}
+            <div className="mt-4 flex items-center justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={conversationsStatus === "LoadingMore" || conversationsStatus === "Exhausted"}
+                onClick={(e) => { e.stopPropagation(); loadMore(20) }}
+              >
+                {conversationsStatus === "LoadingMore" ? "Loading..." : conversationsStatus === "Exhausted" ? "No more" : "Load more"}
+              </Button>
+            </div>
 		</div>
       </div>
     </div>
@@ -127,10 +148,10 @@ function RowWithDialog({ call }: { call: any }) {
           })}
         </TableCell>
         <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-          {call.duration}
+          {formatPhoneNumber(call.phoneNumber)}
         </TableCell>
         <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-          {call.messages}
+          {call.duration}
         </TableCell>
         <TableCell className="px-6 py-4 whitespace-nowrap">
           <Badge

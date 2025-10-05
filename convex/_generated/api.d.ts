@@ -16,6 +16,7 @@ import type {
 import type * as conversations from "../conversations.js";
 import type * as phoneNumber from "../phoneNumber.js";
 import type * as syncElevenLabs from "../syncElevenLabs.js";
+import type * as testing from "../testing.js";
 import type * as user from "../user.js";
 
 /**
@@ -30,6 +31,7 @@ declare const fullApi: ApiFromModules<{
   conversations: typeof conversations;
   phoneNumber: typeof phoneNumber;
   syncElevenLabs: typeof syncElevenLabs;
+  testing: typeof testing;
   user: typeof user;
 }>;
 export declare const api: FilterApi<
