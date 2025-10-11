@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { Play, Pause, Download, X, Volume2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { CallListItem, TranscriptItem } from "@/types/ui"
 import { parseDurationToSeconds, formatDurationFromSeconds } from "../utils/transforms"
@@ -24,6 +24,7 @@ export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrig
   const setOpen = onOpenChange ?? setInternalOpen
   const [transcript, setTranscript] = useState<TranscriptItem[]>([])
   const [loading, setLoading] = useState(false)
+  const [audioLoading, setAudioLoading] = useState(true)
   const [audioError, setAudioError] = useState<string | null>(null)
   const [currentTime, setCurrentTime] = useState(0)
   const [totalDuration, setTotalDuration] = useState(() => parseDurationToSeconds(call.duration))
@@ -45,11 +46,17 @@ export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrig
         }
         return
       }
-      const { data: body } = await tryCatch(res.json() as Promise<any>)
+      const { data: body } = await tryCatch(res.json() as Promise<Record<string, unknown>>)
       const items: TranscriptItem[] = Array.isArray(body?.transcript)
         ? body.transcript
-            .filter((t: any) => t && (t.role === "agent" || t.role === "user") && typeof t.message === "string" && t.message.trim().length > 0)
-            .map((t: any) => ({ role: t.role, message: t.message.trim() }))
+            .filter((t: unknown): t is Record<string, unknown> => {
+              const obj = t as Record<string, unknown>
+              return obj && (obj.role === "agent" || obj.role === "user") && typeof obj.message === "string" && obj.message.trim().length > 0
+            })
+            .map((t: Record<string, unknown>) => ({ 
+              role: t.role as "user" | "agent", 
+              message: (t.message as string).trim() 
+            }))
         : []
       if (!cancelled) {
         setTranscript(items)
@@ -63,6 +70,7 @@ export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrig
   // Point audio element to streaming endpoint when opened
   useEffect(() => {
     setAudioError(null)
+    setAudioLoading(true)
     setCurrentTime(0)
     setTotalDuration(parseDurationToSeconds(call.duration))
     if (!open) return
@@ -199,10 +207,17 @@ export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrig
                 <div className="flex items-center gap-3">
                   <button
                     onClick={togglePlay}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-white transition-transform active:scale-95"
-                    aria-label={isPlaying ? "Pause" : "Play"}
+                    disabled={audioLoading}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-white transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                    aria-label={audioLoading ? "Loading..." : isPlaying ? "Pause" : "Play"}
                   >
-                    {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                    {audioLoading ? (
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    ) : isPlaying ? (
+                      <Pause className="h-5 w-5" />
+                    ) : (
+                      <Play className="h-5 w-5" />
+                    )}
                   </button>
 
                   <div className="ml-1 flex items-center gap-2">
@@ -257,9 +272,13 @@ export function CallDetailsDialog({ call, open: openProp, onOpenChange, hideTrig
                     setTotalDuration(d)
                   }
                 }}
+                onCanPlay={() => setAudioLoading(false)}
                 onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime ?? 0)}
                 onEnded={() => { setIsPlaying(false); setCurrentTime(0) }}
-                onError={() => setAudioError("Audio failed to load")}
+                onError={() => { 
+                  setAudioError("Audio failed to load")
+                  setAudioLoading(false)
+                }}
                 className="hidden"
               >
                 <source src={`/api/conversations/${encodeURIComponent(call.conversationId)}/audio`} type="audio/mpeg" />

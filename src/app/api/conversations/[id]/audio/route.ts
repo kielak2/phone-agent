@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server"
 import client from "@/lib/elevenlabs"
 
-async function toUint8Array(data: any): Promise<Uint8Array> {
+async function toUint8Array(data: unknown): Promise<Uint8Array> {
   if (!data) return new Uint8Array()
   if (data instanceof ArrayBuffer) return new Uint8Array(data)
   if (ArrayBuffer.isView(data)) return new Uint8Array(data.buffer as ArrayBuffer)
@@ -10,11 +10,10 @@ async function toUint8Array(data: any): Promise<Uint8Array> {
     return new Uint8Array(buf)
   }
   // ReadableStream
-  if (data?.getReader || typeof data?.tee === "function") {
+  if (typeof data === "object" && data !== null && ("getReader" in data || "tee" in data)) {
     const reader = (data as ReadableStream<Uint8Array>).getReader()
     const chunks: Uint8Array[] = []
     let total = 0
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
@@ -55,7 +54,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
     const size = bytes.byteLength
 
     // Log memory size for diagnostics
-    console.log(`[audio] conversation ${conversationId} size: ${size} bytes (${(size / 1024 / 1024).toFixed(2)} MB)`) // eslint-disable-line no-console
+    console.log(`[audio] conversation ${conversationId} size: ${size} bytes (${(size / 1024 / 1024).toFixed(2)} MB)`)
 
     const baseHeaders: Record<string, string> = {
       "Content-Type": "audio/mpeg",
@@ -77,7 +76,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
           })
         }
         const chunk = bytes.subarray(start, end + 1)
-        return new Response(chunk, {
+        return new Response(new Uint8Array(chunk), {
           status: 206,
           headers: {
             ...baseHeaders,
@@ -88,7 +87,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
       }
     }
 
-    return new Response(bytes, {
+    return new Response(new Uint8Array(bytes), {
       status: 200,
       headers: { ...baseHeaders, "Content-Length": String(size) },
     })

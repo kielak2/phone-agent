@@ -13,15 +13,16 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       return NextResponse.json({ error: "ElevenLabs API key not configured" }, { status: 500 })
     }
 
-    const details = await client.conversationalAi.conversations.get(conversationId)
+    const details = await client.conversationalAi.conversations.get(conversationId) as unknown
+    const detailsObj = details as Record<string, unknown>
 
-    const transcript = Array.isArray((details as any)?.transcript) ? (details as any).transcript : []
+    const transcript = Array.isArray(detailsObj?.transcript) ? detailsObj.transcript : []
 
     return NextResponse.json({
       conversationId,
-      status: (details as any)?.status,
-      metadata: (details as any)?.metadata,
-      analysis: (details as any)?.analysis,
+      status: detailsObj?.status,
+      metadata: detailsObj?.metadata,
+      analysis: detailsObj?.analysis,
       transcript,
     })
   } catch (error) {

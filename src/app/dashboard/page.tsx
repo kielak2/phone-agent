@@ -1,7 +1,6 @@
 'use client'
 import { useEffect, useState } from "react"
 import { PhoneCall } from "lucide-react"
-/* removed card wrappers for minimal layout */
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -9,6 +8,7 @@ import { UserButton, useUser } from "@clerk/nextjs"
 import { usePaginatedQuery, useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import type { ConversationModel } from "@/types/convex"
+import type { CallListItem } from "@/types/ui"
 import {
   conversationToCallItem,
   sortCallsByNewest,
@@ -33,10 +33,11 @@ export default function Dashboard() {
   )
 
   const { results: conversationsPage, status: conversationsStatus, loadMore } = usePaginatedQuery(
-    (api.conversations as any).getConversationsByUserPaginated as any,
-    (convexUser?._id ? ({ userId: convexUser._id, paginationOpts: { cursor: null, numItems: 20 } } as any) : ("skip" as any)),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (api.conversations as any).getConversationsByUserPaginated,
+    convexUser?._id ? { userId: convexUser._id, paginationOpts: { cursor: null, numItems: 20 } } : "skip",
     { initialNumItems: 20 }
-  ) as any
+  )
 
   // Transform Convex data to UI format using our clean transform layer
   const callItems = (conversationsPage as ConversationModel[] | undefined)
@@ -44,6 +45,10 @@ export default function Dashboard() {
     : []
   const sortedCalls = sortCallsByNewest(callItems)
   const filteredCalls = filterCallsByDateRange(sortedCalls, dateAfter, dateBefore)
+
+  // Loading states
+  const isLoadingPhoneNumbers = phoneNumbers === undefined && convexUser?._id !== undefined
+  const isLoadingConversations = conversationsStatus === "LoadingFirstPage"
 
   useEffect(() => {
     // When filters change, we keep already loaded results and filter client-side.
@@ -87,7 +92,13 @@ export default function Dashboard() {
 					<PhoneCall className="h-4 w-4 text-teal-700" />
 					<span className="text-sm">Active Phone Number</span>
 					<span className="font-mono text-sm rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-teal-700">
-						{phoneNumbers && phoneNumbers.length > 0 ? formatPhoneNumber(phoneNumbers[0].phoneNumber) : "+48 XXX XXX XXX"}
+						{isLoadingPhoneNumbers ? (
+							<span className="animate-pulse">Loading...</span>
+						) : phoneNumbers && phoneNumbers.length > 0 ? (
+							formatPhoneNumber(phoneNumbers[0].phoneNumber)
+						) : (
+							"+48 XXX XXX XXX"
+						)}
 					</span>
 				</div>
 			</div>
@@ -110,9 +121,20 @@ export default function Dashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="bg-white divide-y divide-gray-200">
-                  {filteredCalls.map((call) => (
-                    <RowWithDialog key={call.id} call={call} />
-                  ))}
+                  {isLoadingConversations ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="px-6 py-12 text-center">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-teal-700" />
+                          <span className="text-sm text-gray-500">Loading conversations...</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredCalls.map((call) => (
+                      <RowWithDialog key={call.id} call={call} />
+                    ))
+                  )}
                 </TableBody>
               </Table>
 			</div>
@@ -133,7 +155,7 @@ export default function Dashboard() {
   )
 }
 
-function RowWithDialog({ call }: { call: any }) {
+function RowWithDialog({ call }: { call: CallListItem }) {
   const [open, setOpen] = useState(false)
   return (
     <>
