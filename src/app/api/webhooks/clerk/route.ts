@@ -55,6 +55,13 @@ export async function POST(req: Request) {
     
     switch (eventType) {
       case 'user.created':
+        // Debug: Log the full event data to see what Clerk sends
+        console.log('User created event received:', {
+          userId: evt.data.id,
+          email: evt.data.email_addresses?.[0]?.email_address,
+          publicMetadata: evt.data.public_metadata,
+        });
+        
         await convex.mutation(api.user.syncUser, {
           clerkId: evt.data.id,
           email: evt.data.email_addresses?.[0]?.email_address,

@@ -9,16 +9,32 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Phone, ArrowRight } from "lucide-react"
 import { tryCatch } from "@/lib/tryCatch"
+import { useMutation } from "convex/react"
+import { api } from "../../convex/_generated/api"
 
 export default function HomePage() {
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
+  const submitContactMessage = useMutation(api.contactMessage.submitContactMessage)
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const form = e.currentTarget as HTMLFormElement
     setLoading(true)
-    const { error } = await tryCatch(new Promise((r) => setTimeout(r, 700)))
+    const formData = new FormData(form)
+    const name = String(formData.get('name') || '')
+    const email = String(formData.get('email') || '')
+    const shopWebsiteUrlValue = formData.get('shop_website_url')
+    const messageValue = formData.get('message')
+
+    const { error } = await tryCatch(
+      submitContactMessage({
+        name,
+        email,
+        shopWebsiteUrl: shopWebsiteUrlValue ? String(shopWebsiteUrlValue) : undefined,
+        message: messageValue ? String(messageValue) : undefined,
+      })
+    )
     setLoading(false)
     if (!error) {
       setSubmitted(true)
@@ -191,6 +207,7 @@ export default function HomePage() {
                         <Textarea
                           name="message"
                           placeholder="Jak możemy pomóc? (opcjonalne)"
+                          maxLength={2000}
                           className="min-h-[100px] border-slate-200 bg-slate-50/50 shadow-sm focus:bg-white"
                         />
                       </div>

@@ -34,7 +34,15 @@ export default defineSchema({
     .index("by_user_id_start_time", ["userId", "startTime"]) 
     .index("by_conversation_id", ["conversationId"])
     .index("by_call_successful", ["callSuccessful"])
-    .index("by_start_time", ["startTime"])
+    .index("by_start_time", ["startTime"]),
+    
+  // Public contact form submissions from homepage
+  contactMessage: defineTable({
+    name: v.string(),
+    email: v.string(),
+    shopWebsiteUrl: v.optional(v.string()),
+    message: v.optional(v.string()),
+  })
     
 }); 
 
