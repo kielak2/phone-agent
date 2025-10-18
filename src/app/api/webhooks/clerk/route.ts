@@ -55,21 +55,28 @@ export async function POST(req: Request) {
     
     switch (eventType) {
       case 'user.created':
-        // Debug: Log the full event data to see what Clerk sends
-        console.log('User created event received:', {
-          userId: evt.data.id,
-          email: evt.data.email_addresses?.[0]?.email_address,
-          publicMetadata: evt.data.public_metadata,
-        });
-        
-        await convex.mutation(api.user.syncUser, {
+        const userId = await convex.mutation(api.user.syncUser, {
           clerkId: evt.data.id,
           email: evt.data.email_addresses?.[0]?.email_address,
           isActive: true,
         });
-        console.log('User created:', evt.data.id);
+
+        if (!userId) {
+          console.error('User not found after sync');
+          return new Response('User not found after sync', { status: 500 });
+        }
+
+        console.log('User created:', userId);
+
+        await convex.mutation(api.phoneNumber.addPhoneNumber, {
+          userId: userId,
+          phoneNumber: evt.data.public_metadata?.phone_number as string,
+          agentId: evt.data.public_metadata?.agent_id as string,
+        });
+
+        console.log('Phone number added for user:', userId);
+
         break;
-        
       case 'user.updated':
         await convex.mutation(api.user.syncUser, {
           clerkId: evt.data.id,
@@ -83,6 +90,7 @@ export async function POST(req: Request) {
         await convex.mutation(api.user.deleteUser, {
           clerkId: evt.data.id,
         });
+        console.log('User deleted:', evt.data.id);
         break;
         
       default:
