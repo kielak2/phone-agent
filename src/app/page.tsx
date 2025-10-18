@@ -104,7 +104,7 @@ export default function HomePage() {
                   Nie masz konta, ale jesteś zainteresowany?
                 </h2>
                 <p className="mt-4 text-slate-700">
-                  Zadzwoń, aby umówić spotkanie i od razu sprawdzić, jak realistyczny jest nasz agent telefoniczny.
+                  Zadzwoń do naszego agenta telefonicznego i dowiedz się więcej o naszym produkcie.
                 </p>
 
                 <div className="mt-6 rounded-lg border-2 border-teal-200 bg-white p-4 shadow-md">
@@ -125,9 +125,9 @@ export default function HomePage() {
                 </div>
 
                 <div className="mt-6 space-y-2 text-sm text-slate-600">
-                  <p>✓ Pilotaż 2‑tygodniowy</p>
-                  <p>✓ Panel z transkryptami i metrykami</p>
-                  <p>✓ Pełna kontrola nagrywania rozmów</p>
+                  <p>✓ Agent AI dostępny 24/7</p>
+                  <p>✓ Panel z nagraniami i transkryptami</p>
+                  <p>✓ Pierwszy miesiąc za darmo</p>
                 </div>
               </div>
 
@@ -165,7 +165,7 @@ export default function HomePage() {
                         <Input
                           name="email"
                           type="email"
-                          placeholder="Służbowy e‑mail"
+                          placeholder="E‑mail do kontaktu"
                           className="h-11 border-slate-200 bg-slate-50/50 shadow-sm focus:bg-white"
                           required
                           onInvalid={(e) => {
@@ -182,15 +182,15 @@ export default function HomePage() {
                       </div>
                       <div>
                         <Input
-                          name="company"
-                          placeholder="Firma (opcjonalnie)"
+                          name="shop_website_url"
+                          placeholder="Link do sklepu internetowego (opcjonalne)"
                           className="h-11 border-slate-200 bg-slate-50/50 shadow-sm focus:bg-white"
                         />
                       </div>
                       <div>
                         <Textarea
                           name="message"
-                          placeholder="Jak możemy pomóc?"
+                          placeholder="Jak możemy pomóc? (opcjonalne)"
                           className="min-h-[100px] border-slate-200 bg-slate-50/50 shadow-sm focus:bg-white"
                         />
                       </div>
@@ -213,14 +213,6 @@ export default function HomePage() {
       <footer className="border-t border-slate-200 bg-white/80">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 text-sm text-slate-600">
           <span>© {new Date().getFullYear()} AutoOdbiór</span>
-          <div className="flex items-center gap-6">
-            <Link href="/privacy" className="hover:text-slate-900">
-              Prywatność
-            </Link>
-            <Link href="/terms" className="hover:text-slate-900">
-              Regulamin
-            </Link>
-          </div>
         </div>
       </footer>
     </main>
