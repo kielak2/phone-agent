@@ -50,13 +50,13 @@ export default function HomePage() {
           <Link href="/" className="flex items-center gap-3">
             <Image 
               src="/logo-128.png" 
-              alt="AutoOdbiór" 
+              alt="VoxAgent" 
               width={128}
               height={128}
               className="h-14 w-14"
             />
             <span className="text-2xl font-extrabold text-slate-900">
-              Auto<span className="text-teal-600">Odbiór</span>
+              Vox<span className="text-teal-600">Agent</span>
             </span>
           </Link>
 
@@ -229,7 +229,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white/80">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 text-sm text-slate-600">
-          <span>© {new Date().getFullYear()} AutoOdbiór</span>
+          <span>© {new Date().getFullYear()} VoxAgent</span>
         </div>
       </footer>
     </main>

@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AutoOdbiór — Telefoniczny agent AI dla e‑commerce",
+  title: "VoxAgent — Telefoniczny agent AI dla e‑commerce",
   description: "Automatyczny asystent telefoniczny 24/7: odbiera połączenia, pomaga klientom i zwiększa sprzedaż.",
 };
 
